@@ -1,0 +1,27 @@
+---
+import { Image } from 'astro:assets';
+import { SITE_TITLE } from '@src/consts';
+import BaseLayout from '@src/layouts/BaseLayout.astro';
+import NotFoundImage from '@src/assets/img/404-not-found.png';
+import { getLangFromUrl, useTranslations } from '@src/i18n/utils';
+
+const t = useTranslations(getLangFromUrl(Astro.url));
+---
+
+<!-- noLangRedirect: a static host serves this page for any unknown path, so its
+     "equivalent" in the other language would not exist either.
+     noindex: /es/404/ is a real 200 page, so without this it is indexable. -->
+<BaseLayout
+	title={t('notFound.seoTitle') + ' - ' + SITE_TITLE}
+	description={t('site.description') + ' ' + t('notFound.seoDescription')}
+	noLangRedirect={true}
+	noindex={true}
+>
+	<div class='container text-center'>
+		<Image width={300} class='my-8 mx-auto' src={NotFoundImage} alt={t('notFound.imageAlt')} />
+		<div class='p-4'>
+			<h1 class='text-5xl font-bold my-4'>{t('notFound.heading')}</h1>
+			<p class='text-xl'>{t('notFound.body')}</p>
+		</div>
+	</div>
+</BaseLayout>

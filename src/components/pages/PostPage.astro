@@ -1,0 +1,146 @@
+---
+import Prose from '@src/components/Prose.astro';
+import BaseLayout from '@src/layouts/BaseLayout.astro';
+import { Image } from 'astro:assets';
+import FormattedDate from '@src/components/FormattedDate.astro';
+import AboutTheAuthor from '@src/components/widgets/AboutTheAuthor.astro';
+import TableOfContent from '@src/components/widgets/TableOfContent.astro';
+import { slugify } from '@src/utils';
+import { loadEnv } from 'vite';
+import { render } from 'astro:content';
+import { getLangFromUrl, useTranslations, localizePath, translateTag } from '@src/i18n/utils';
+import { langLocale } from '@src/i18n/ui';
+import type { ResolvedPost } from '@src/i18n/posts';
+
+const { GISCUS_REPO, GISCUS_REPO_ID, GISCUS_CATEGORY, GISCUS_CATEGORY_ID } = loadEnv(process.env.NODE_ENV || 'production', process.cwd(), '');
+
+interface Props {
+	post: ResolvedPost;
+}
+
+const { post } = Astro.props;
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+const {
+	data: { title, seoTitle, description, coverImage, pubDate, updatedDate, tags }
+} = post.entry;
+const { Content, headings } = await render(post.entry);
+---
+
+<BaseLayout
+	title={seoTitle || title}
+	description={description}
+	image={coverImage?.src || undefined}
+	article={{ publishedTime: pubDate, modifiedTime: updatedDate, tags }}
+>
+	<div class='container lg:flex gap-10'>
+		<main
+			class='overflow-hidden grow'
+		>
+			<article>
+				<Prose>
+					<div>
+						<h1 class='!my-1 leading-tight'>{title}</h1>
+            <div class='text-sm font-[500] mt-2 sm:mt-0 py-1 md:text-right flex flex-col sm:flex-row gap-3 sm:justify-between sm:items-center'>
+              {
+                <div class='flex gap-2'>
+                  {
+                    (tags || [] )?.map((tag: string) => (
+                      <a
+                        class='border border-zinc-300 dark:border-zinc-700 rounded-2xl
+                          text-sm text-zinc-700 dark:text-zinc-300 no-underline px-2 py-0.5
+                          transition-all duration-700
+                        hover:border-zinc-700 dark:hover:border-zinc-300'
+                        href={localizePath(`/tags/${slugify(tag)}/`, lang)}>
+                        {translateTag(tag, lang)}
+                      </a>
+                    ))
+                  }
+                </div>
+              }
+              <div>
+                {
+                  updatedDate ?
+                    <>{t('post.updatedOn')} <strong><FormattedDate date={updatedDate} /></strong></>
+                  :
+                    <>{t('post.publishedOn')} <strong><FormattedDate date={pubDate} /></strong></>
+                }
+              </div>
+            </div>
+					</div>
+          {
+            post.isFallback && (
+              <p class='not-prose text-sm text-zinc-600 dark:text-zinc-400 border border-zinc-300 dark:border-zinc-700 rounded-lg px-3 py-2 my-4'>
+                {t('post.onlyInEnglish')}
+              </p>
+            )
+          }
+          <div class='py-3 overflow-hidden'>
+            {coverImage && <Image class='rounded-3xl w-full m-0 lg:mb-2' src={coverImage} alt={title} loading='eager' />}
+          </div>
+					<Content />
+				</Prose>
+        {
+          GISCUS_REPO &&
+            <script
+              id='giscus-script'
+              is:inline
+              src='https://giscus.app/client.js'
+              data-repo={GISCUS_REPO}
+              data-repo-id={GISCUS_REPO_ID}
+              data-category={GISCUS_CATEGORY}
+              data-category-id={GISCUS_CATEGORY_ID}
+              data-mapping='pathname'
+              data-strict='0'
+              data-reactions-enabled='1'
+              data-emit-metadata='0'
+              data-input-position='bottom'
+              data-theme='preferred_color_scheme'
+              data-lang={langLocale[lang]}
+              crossorigin='anonymous'
+              async></script>
+        }
+
+			</article>
+		</main>
+    <div class='shrink-0 w-[280px] hidden md:block'>
+      <div class='mb-4'>
+				<AboutTheAuthor />
+			</div>
+			<TableOfContent headings={headings} />
+		</div>
+	</div>
+</BaseLayout>
+
+<script async is:inline>
+	const anchors = document.querySelectorAll('.prose h2[id], .prose h3[id]');
+	const links = document.querySelectorAll('nav.toc ul li a');
+
+	function observeToc() {
+		if (typeof anchors != 'undefined' && anchors != null && typeof links != 'undefined' && links != null) {
+			let scrollTop = window.scrollY;
+
+			// highlight the last scrolled-to: set everything inactive first
+			for (const link of links) {
+				link.classList.add('border-transparent', 'text-inherit');
+				link.classList.remove('bg-[var(--background-surface-color)]', 'border-[var(--soft-border-color)]', 'text-[var(--link-color)]');
+			}
+			// then iterate backwards, on the first match highlight it and break
+			for (var i = anchors.length - 1; i >= 0; i--) {
+				if (scrollTop > anchors[i].offsetTop - 80) {
+					links[i].classList.remove('border-transparent', 'text-inherit');
+					links[i].classList.add('bg-[var(--background-surface-color)]', 'border-[var(--soft-border-color)]', 'text-[var(--link-color)]');
+					break;
+				}
+			}
+		}
+	}
+
+	window.addEventListener('scroll', (event) => {
+		observeToc(event);
+	});
+	window.addEventListener('hashchange', (event) => {
+		observeToc(event);
+	});
+</script>

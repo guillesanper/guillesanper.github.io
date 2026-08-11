@@ -1,0 +1,45 @@
+---
+import { getLangFromUrl, localizePath } from '@src/i18n/utils';
+import { defaultLang, allLangs } from '@src/i18n/ui';
+
+interface Props {
+	/** Set on the 404 page: its "equivalent" URL does not exist either. */
+	disabled?: boolean;
+}
+
+const { disabled = false } = Astro.props;
+
+const currentLang = getLangFromUrl(Astro.url);
+
+// Every language's version of this page, resolved on the server so the script
+// can only ever redirect to a URL that was actually built.
+const paths = Object.fromEntries(
+	allLangs.map((lang) => [lang, localizePath(Astro.url.pathname, lang)])
+);
+---
+
+{
+	!disabled && (
+		<script is:inline define:vars={{ currentLang, paths, defaultLang }}>
+			// Sends the visitor to their remembered language before the first paint, so
+			// the choice survives navigation and return visits. Same pre-paint pattern
+			// as ThemeScript.
+			(() => {
+				try {
+					let target = localStorage.getItem('lang');
+					if (!target || !paths[target]) {
+						// First visit: guess from the browser, then remember it.
+						const prefix = (navigator.language || defaultLang).toLowerCase().split('-')[0];
+						target = paths[prefix] ? prefix : defaultLang;
+						localStorage.setItem('lang', target);
+					}
+					// `paths` comes from the server, so after the redirect the stored
+					// language matches the page and this cannot loop.
+					if (target !== currentLang) location.replace(paths[target]);
+				} catch (e) {
+					// Storage blocked (private mode): leave the visitor where they are.
+				}
+			})();
+		</script>
+	)
+}

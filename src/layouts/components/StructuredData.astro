@@ -1,0 +1,90 @@
+---
+import { getLangFromUrl, useTranslations } from '@src/i18n/utils';
+import { langLocale } from '@src/i18n/ui';
+import {
+	AUTHOR_NAME,
+	AUTHOR_ROLE,
+	CONTACT_EMAIL,
+	GITHUB_URL,
+	LINKEDIN_URL,
+	SITE_TITLE
+} from '@src/consts';
+import type { ArticleMeta } from '@src/seo';
+import AuthorPhoto from '@src/assets/img/ava.jpg';
+
+interface Props {
+	title: string;
+	description: string;
+	canonical: string;
+	image: string;
+	article?: ArticleMeta;
+}
+
+const { title, description, canonical, image, article } = Astro.props;
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+const site = Astro.site!.toString();
+// Stable @ids let the nodes reference each other instead of repeating
+// themselves, which is what search engines expect from a @graph.
+const personId = `${site}#person`;
+const siteId = `${site}#website`;
+
+const person = {
+	'@type': 'Person',
+	'@id': personId,
+	name: AUTHOR_NAME,
+	url: site,
+	jobTitle: AUTHOR_ROLE,
+	email: CONTACT_EMAIL,
+	// Always the portrait. `image` is the page's social card, which on a post is
+	// the cover art - not a picture of the person.
+	image: new URL(AuthorPhoto.src, Astro.site).toString(),
+	// Only the profiles that are actually filled in: an empty sameAs entry is
+	// worse than none.
+	sameAs: [GITHUB_URL, LINKEDIN_URL].filter(Boolean)
+};
+
+const website = {
+	'@type': 'WebSite',
+	'@id': siteId,
+	url: site,
+	name: SITE_TITLE,
+	description: t('site.description'),
+	inLanguage: langLocale[lang],
+	publisher: { '@id': personId }
+};
+
+const page = article
+	? {
+			'@type': 'BlogPosting',
+			'@id': canonical,
+			url: canonical,
+			mainEntityOfPage: canonical,
+			headline: title,
+			description,
+			image,
+			inLanguage: langLocale[lang],
+			datePublished: article.publishedTime.toISOString(),
+			dateModified: (article.modifiedTime ?? article.publishedTime).toISOString(),
+			keywords: article.tags,
+			author: { '@id': personId },
+			publisher: { '@id': personId },
+			isPartOf: { '@id': siteId }
+		}
+	: {
+			'@type': 'WebPage',
+			'@id': canonical,
+			url: canonical,
+			name: title,
+			description,
+			inLanguage: langLocale[lang],
+			isPartOf: { '@id': siteId },
+			about: { '@id': personId }
+		};
+
+const graph = { '@context': 'https://schema.org', '@graph': [person, website, page] };
+---
+
+<script type='application/ld+json' set:html={JSON.stringify(graph)} is:inline />

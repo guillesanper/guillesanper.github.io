@@ -1,0 +1,237 @@
+// Every user-facing string on the site lives here, keyed by language.
+// `en` is the source of truth: it defines the key set, and any key missing
+// from another language falls back to it (see `useTranslations` in ./utils).
+
+export const languages = {
+	en: 'English',
+	es: 'Español'
+} as const;
+
+export const defaultLang = 'en';
+
+export type Lang = keyof typeof languages;
+
+/** Every language the site ships, in display order. */
+export const allLangs = Object.keys(languages) as Lang[];
+
+/** Short label shown in the header language selector. */
+export const langShortLabel: Record<Lang, string> = {
+	en: 'EN',
+	es: 'ES'
+};
+
+/** BCP 47 tag used for <html lang>, dates and hreflang. */
+export const langLocale: Record<Lang, string> = {
+	en: 'en',
+	es: 'es'
+};
+
+/** Open Graph wants `language_TERRITORY`, not the bare BCP 47 tag. */
+export const ogLocale: Record<Lang, string> = {
+	en: 'en_US',
+	es: 'es_ES'
+};
+
+export const ui = {
+	en: {
+		'site.tagline': 'Infrastructure, ML and secure systems',
+		'site.description':
+			'Guillermo Sanchez - final-year Software Engineering student in Madrid. Notes on infrastructure, machine learning systems and building security into software rather than bolting it on.',
+		/** Alt text for the social preview image. */
+		'seo.imageAlt': 'Guillermo Sanchez',
+
+		'nav.home': 'Home',
+		'nav.about': 'About',
+		'nav.posts': 'Posts',
+		'nav.projects': 'Projects',
+		'nav.tags': 'Tags',
+
+		'header.github': 'Github logo',
+		'header.theme': 'Theme mode',
+		'header.language': 'Change language',
+
+		'footer.newsletter': 'Newsletter',
+		'footer.coffee': 'Buy me a Coffee',
+		'footer.rss': 'RSS',
+
+		'home.intro1':
+			"Final-year Software Engineering student in Madrid. I build ML systems, infrastructure tooling, and applications where the security model is decided before the first line of code - not added afterwards.",
+		'home.intro2':
+			'Currently looking for Platform Engineering, Cloud Engineering or DevSecOps work.',
+		'home.moreAboutMe': 'More about me',
+		'home.recentPosts': 'Recent Posts',
+		'home.myProjects': 'My Projects',
+		'home.allPosts': 'All posts »',
+		'home.allProjects': 'All projects »',
+
+		'about.seoTitle': 'About Me',
+		'about.seoDescription':
+			'Guillermo Sanchez - final-year Software Engineering student in Madrid, building infrastructure, ML systems and security-integrated software.',
+		'about.heading': 'About me',
+		'about.p1':
+			"What interests me is what happens when a system stops being an exercise and has to withstand real load, real failures and real users' data. I'm completing a Software Engineering degree in Madrid, and wherever the choice was mine I have specialised toward machine learning, evolutionary computation, knowledge engineering and big data; almost every project I have built outside the curriculum returns to that same question.",
+		'about.p2':
+			'None of those courses was a security course, and yet that is where nearly every project has ended up: a password manager whose server cannot read the vaults it stores, a database migration platform that maps schemas without reading a single row, an intrusion detection system on CICIDS2017 whose architecture is determined by the cost of a false negative. Encryption and threat modelling were never the objective; they became unavoidable the moment the system had to hold up.',
+		'about.p3':
+			"I'm looking for a role in Platform Engineering, Cloud Engineering or DevSecOps. Beyond the title, what I want is to join a team running systems in production and learn how they hold up in practice — starting at whichever point in the stack is most useful.",
+		'about.workHeading': 'What I work with',
+		'about.workBody':
+			"I choose the tool for the part of the problem I'm worried about. Python for anything ML — NumPy, scikit-learn, XGBoost, pandas — with FastAPI when a model has to sit behind an endpoint; I implement neural networks by hand in NumPy when I need to understand exactly what the gradients are doing, and use a framework when I don't. TypeScript and React when the complexity lives in the browser, Django or Node when it lives in an API over data, Java and Spring when a stricter type system earns its keep, C++ when the cost per operation is what matters. Underneath all of it: Linux, Docker, CI pipelines, SQL and the connector layer around it, deployed on Google Cloud.",
+		'about.approachHeading': 'How I approach a problem',
+		'about.approachBody':
+			'I start from the failure modes. In the intrusion detection cascade, that meant weighing the cost of a false negative against that of a false positive and letting the answer drive the architecture, rather than optimising for accuracy on a benchmark. In the password manager, it meant assuming the database was already compromised, recognising that the initial design did not survive that assumption, and moving key derivation into the browser so that it did. Most of the decisions that matter in a system are made before the first line of code is written.',
+		'about.learningHeading': "What I'm learning now",
+		'about.learningBody':
+			'Infrastructure as code, Kubernetes and the operational side of running ML systems rather than only training them — observability, reproducible builds, and how a pipeline behaves at 3am when nobody is watching it. I document the parts I had to work out myself on the',
+		'about.learningBlogLink': 'blog',
+
+		'posts.title': 'All posts',
+		'posts.description':
+			'Write-ups on the systems I build: machine learning pipelines, applied cryptography, and infrastructure.',
+
+		'projects.title': 'Projects',
+		'projects.description':
+			'Things I have built end to end. Each one has a write-up on the decisions behind it.',
+		'projects.article': 'Article',
+		'projects.demo': 'Demo',
+		'projects.stars': 'stars',
+		'projects.githubStars': 'Github stars',
+
+		'tags.title': 'All Tags',
+		'tags.description':
+			'Post tags: concise keywords categorizing content for easy navigation and improved searchability',
+		'tags.taggedWith': 'All Posts Tagged with {tag}',
+		/** Kept distinct from the heading: a meta description that merely repeats
+		    the <h1> is dead weight, and every tag page would look alike. */
+		'tags.metaDescription':
+			'Every post tagged {tag}: notes on infrastructure, machine learning systems and secure software design.',
+
+		'post.updatedOn': 'Updated on',
+		'post.publishedOn': 'Published on',
+		'post.onlyInEnglish': 'This post is only available in English.',
+
+		'toc.onThisPage': 'On This Page',
+
+		'author.heading': 'About the Author',
+		'author.bio1':
+			'Guillermo is a final-year Software Engineering student in Madrid. He builds ML systems, infrastructure tooling and applications where the security model is decided before the first line of code.',
+		'author.bio2':
+			'He is looking for Platform Engineering, Cloud Engineering or DevSecOps work. Reach him at',
+
+		'notFound.seoTitle': '404 Page Not Found',
+		'notFound.seoDescription': '404 Page Not Found',
+		'notFound.heading': 'Page Not Found',
+		'notFound.body':
+			"The page you're looking for is either moved or no longer exists. Please contact the site owner that linked you to the original URL and let them know their link is broken.",
+		'notFound.imageAlt': '404 Page Not Found'
+	},
+	es: {
+		'site.tagline': 'Infraestructura, ML y sistemas seguros',
+		'site.description':
+			'Guillermo Sanchez - estudiante de último año de Ingeniería del Software en Madrid. Notas sobre infraestructura, sistemas de machine learning y cómo integrar la seguridad en el software en lugar de añadirla al final.',
+		'seo.imageAlt': 'Guillermo Sanchez',
+
+		'nav.home': 'Inicio',
+		'nav.about': 'Sobre mí',
+		'nav.posts': 'Artículos',
+		'nav.projects': 'Proyectos',
+		'nav.tags': 'Etiquetas',
+
+		'header.github': 'Logo de Github',
+		'header.theme': 'Modo de color',
+		'header.language': 'Cambiar de idioma',
+
+		'footer.newsletter': 'Newsletter',
+		'footer.coffee': 'Invítame a un café',
+		'footer.rss': 'RSS',
+
+		'home.intro1':
+			'Estudiante de último año de Ingeniería del Software en Madrid. Construyo sistemas de ML, herramientas de infraestructura y aplicaciones donde el modelo de seguridad se decide antes de la primera línea de código, no se añade después.',
+		'home.intro2':
+			'Actualmente busco trabajo en Platform Engineering, Cloud Engineering o DevSecOps.',
+		'home.moreAboutMe': 'Más sobre mí',
+		'home.recentPosts': 'Artículos recientes',
+		'home.myProjects': 'Mis proyectos',
+		'home.allPosts': 'Todos los artículos »',
+		'home.allProjects': 'Todos los proyectos »',
+
+		'about.seoTitle': 'Sobre mí',
+		'about.seoDescription':
+			'Guillermo Sanchez - estudiante de último año de Ingeniería del Software en Madrid. Construyo infraestructura, sistemas de ML y software con la seguridad integrada.',
+		'about.heading': 'Sobre mí',
+		'about.p1':
+			'Me interesa lo que ocurre cuando un sistema deja de ser un ejercicio y tiene que soportar carga real, fallos reales y datos de usuarios reales. Estoy terminando Ingeniería del Software en Madrid y, siempre que he podido elegir, me he especializado hacia aprendizaje automático, computación evolutiva, ingeniería del conocimiento y big data; casi todos los proyectos que he construido fuera del plan de estudios vuelven a esa misma pregunta.',
+		'about.p2':
+			'Ninguna de esas asignaturas era de ciberseguridad y, aun así, es donde han desembocado casi todos los proyectos: un gestor de contraseñas cuyo servidor no puede leer las bóvedas que almacena, una plataforma de migración de bases de datos que mapea esquemas sin leer una sola fila, un detector de intrusiones sobre CICIDS2017 cuya arquitectura viene determinada por el coste de un falso negativo. El cifrado y el modelado de amenazas nunca fueron el objetivo; se volvieron inevitables en cuanto el sistema tuvo que sostenerse.',
+		'about.p3':
+			'Busco un puesto en Platform Engineering, Cloud Engineering o DevSecOps. Más allá del título, lo que quiero es incorporarme a un equipo con sistemas en producción y aprender cómo se sostienen en la práctica — empezando por el punto del stack donde resulte más útil.',
+		'about.workHeading': 'Con qué trabajo',
+		'about.workBody':
+			'Elijo la herramienta según la parte del problema que me preocupa. Python para todo lo de ML — NumPy, scikit-learn, XGBoost, pandas — con FastAPI cuando un modelo tiene que quedar detrás de un endpoint; implemento redes neuronales a mano en NumPy cuando necesito entender exactamente qué están haciendo los gradientes, y recurro a un framework cuando no. TypeScript y React cuando la complejidad está en el navegador, Django o Node cuando está en una API sobre datos, Java y Spring cuando compensa un sistema de tipos más estricto, C++ cuando lo que importa es el coste por operación. Debajo de todo: Linux, Docker, pipelines de CI, SQL y la capa de conectores que lo rodea, desplegado en Google Cloud.',
+		'about.approachHeading': 'Cómo abordo un problema',
+		'about.approachBody':
+			'Empiezo por los modos de fallo. En la cascada de detección de intrusiones eso significó sopesar el coste de un falso negativo frente al de un falso positivo y dejar que esa respuesta guiara la arquitectura, en lugar de optimizar la precisión sobre un benchmark. En el gestor de contraseñas significó asumir que la base de datos ya estaba comprometida, reconocer que el diseño inicial no sobrevivía a esa suposición y mover la derivación de claves al navegador para que sí lo hiciera. La mayoría de las decisiones que importan en un sistema se toman antes de escribir la primera línea de código.',
+		'about.learningHeading': 'Qué estoy aprendiendo ahora',
+		'about.learningBody':
+			'Infraestructura como código, Kubernetes y el lado operativo de ejecutar sistemas de ML en lugar de solo entrenarlos — observabilidad, builds reproducibles y cómo se comporta un pipeline a las 3 de la mañana cuando nadie lo está mirando. Documento las partes que tuve que resolver yo mismo en el',
+		'about.learningBlogLink': 'blog',
+
+		'posts.title': 'Todos los artículos',
+		'posts.description':
+			'Artículos sobre los sistemas que construyo: pipelines de machine learning, criptografía aplicada e infraestructura.',
+
+		'projects.title': 'Proyectos',
+		'projects.description':
+			'Cosas que he construido de principio a fin. Cada una tiene un artículo con las decisiones que hay detrás.',
+		'projects.article': 'Artículo',
+		'projects.demo': 'Demo',
+		'projects.stars': 'estrellas',
+		'projects.githubStars': 'Estrellas en Github',
+
+		'tags.title': 'Todas las etiquetas',
+		'tags.description':
+			'Etiquetas de los artículos: palabras clave que categorizan el contenido para navegar y buscar con facilidad.',
+		'tags.taggedWith': 'Todos los artículos etiquetados con {tag}',
+		'tags.metaDescription':
+			'Todos los artículos etiquetados con {tag}: notas sobre infraestructura, sistemas de machine learning y diseño de software seguro.',
+
+		'post.updatedOn': 'Actualizado el',
+		'post.publishedOn': 'Publicado el',
+		'post.onlyInEnglish': 'Este artículo solo está disponible en inglés.',
+
+		'toc.onThisPage': 'En esta página',
+
+		'author.heading': 'Sobre el autor',
+		'author.bio1':
+			'Guillermo es estudiante de último año de Ingeniería del Software en Madrid. Construye sistemas de ML, herramientas de infraestructura y aplicaciones donde el modelo de seguridad se decide antes de la primera línea de código.',
+		'author.bio2':
+			'Busca trabajo en Platform Engineering, Cloud Engineering o DevSecOps. Puedes escribirle a',
+
+		'notFound.seoTitle': '404 Página no encontrada',
+		'notFound.seoDescription': '404 Página no encontrada',
+		'notFound.heading': 'Página no encontrada',
+		'notFound.body':
+			'La página que buscas se ha movido o ya no existe. Ponte en contacto con quien te enlazó a la URL original y avísale de que su enlace está roto.',
+		'notFound.imageAlt': '404 Página no encontrada'
+	}
+} as const satisfies Record<Lang, Record<string, string>>;
+
+export type UIKey = keyof (typeof ui)[typeof defaultLang];
+
+/**
+ * Display labels for post tags. Tag *slugs* stay English so URLs are stable
+ * across languages; only what the reader sees is translated. Tags missing here
+ * render as-is (proper nouns like Python or Django need no translation).
+ */
+export const tagLabels: Record<Lang, Record<string, string>> = {
+	en: {},
+	es: {
+		Security: 'Seguridad',
+		Databases: 'Bases de datos',
+		Architecture: 'Arquitectura',
+		Simulation: 'Simulación',
+		Career: 'Carrera profesional',
+		Engineering: 'Ingeniería',
+		Cryptography: 'Criptografía'
+	}
+};

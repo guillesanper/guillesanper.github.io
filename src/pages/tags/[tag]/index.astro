@@ -1,0 +1,12 @@
+---
+import TagPage from '@src/components/pages/TagPage.astro';
+import { getTagPaths } from '@src/i18n/routes';
+
+export async function getStaticPaths() {
+	return getTagPaths();
+}
+
+const { tag } = Astro.params;
+---
+
+<TagPage tag={tag ?? ''} />

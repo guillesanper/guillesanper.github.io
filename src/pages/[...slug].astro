@@ -1,0 +1,12 @@
+---
+import PostPage from '@src/components/pages/PostPage.astro';
+import { getPostPathsFor } from '@src/i18n/routes';
+
+export async function getStaticPaths() {
+	return getPostPathsFor('en');
+}
+
+const { post } = Astro.props;
+---
+
+<PostPage post={post} />

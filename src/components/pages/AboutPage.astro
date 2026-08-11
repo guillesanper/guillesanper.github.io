@@ -1,0 +1,44 @@
+---
+import { Image } from 'astro:assets';
+import BaseLayout from '@src/layouts/BaseLayout.astro';
+import Ava from '@src/assets/img/ava.jpg';
+import Prose from '@src/components/Prose.astro';
+import { AUTHOR_NAME } from '@src/consts';
+import { getLangFromUrl, useTranslations, localizePath } from '@src/i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+---
+
+<BaseLayout title={t('about.seoTitle')} description={t('about.seoDescription')}>
+  <div class='container'>
+		<main class='prose text-lg dark:prose-invert'>
+      <article>
+        <div class='w-full md:flex md:items-center gap-16 mb-10'>
+          <div class="text-pretty leading-9">
+            <h1 class="text-4xl font-bold mb-4">{t('about.heading')}</h1>
+            <Prose>
+              <div class="text-lg">
+                <p>{t('about.p1')}</p>
+                <p>{t('about.p2')}</p>
+                <p>{t('about.p3')}</p>
+              </div>
+            </Prose>
+          </div>
+          <Image src={Ava} alt={AUTHOR_NAME} width={300} class="rounded-3xl rotate-3 mx-4 md:mx-0"/>
+        </div>
+        <div>
+          <h2>{t('about.workHeading')}</h2>
+          <p>{t('about.workBody')}</p>
+          <h2>{t('about.approachHeading')}</h2>
+          <p>{t('about.approachBody')}</p>
+          <h2>{t('about.learningHeading')}</h2>
+          <p>
+            {t('about.learningBody')}
+            <a href={localizePath('/posts/', lang)}>{t('about.learningBlogLink')}</a>.
+          </p>
+        </div>
+      </article>
+    </main>
+  </div>
+</BaseLayout>

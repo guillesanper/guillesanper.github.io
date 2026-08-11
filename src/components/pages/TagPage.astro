@@ -1,0 +1,37 @@
+---
+import BaseLayout from '@src/layouts/BaseLayout.astro';
+import { slugify, unslugify } from '@src/utils';
+import PostsByYear from '@src/components/PostsByYear.astro';
+import { getLangFromUrl, useTranslations, translateTag } from '@src/i18n/utils';
+import { getPostsFor, entriesOf } from '@src/i18n/posts';
+
+interface Props {
+	/** The tag slug from the route params. */
+	tag: string;
+}
+
+const { tag } = Astro.props;
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+const allPosts = entriesOf(await getPostsFor(lang));
+const taggedPosts = allPosts.filter((post) => post.data.tags?.map((one) => slugify(one)).includes(tag));
+
+// Recover the tag's original casing from a matching post so the heading shows
+// the translated label rather than a naively de-slugified string.
+const originalTag =
+	taggedPosts[0]?.data.tags?.find((one) => slugify(one) === tag) ?? unslugify(tag);
+const label = translateTag(originalTag, lang);
+
+const title = t('tags.taggedWith', { tag: label });
+const description = t('tags.metaDescription', { tag: label });
+---
+
+<BaseLayout title={title} description={description}>
+  <div class='container'>
+    <div class="mb-10">
+      <h1 class="text-3xl font-bold mb-2">{title}</h1>
+    </div>
+    <PostsByYear posts={taggedPosts}/>
+  </div>
+</BaseLayout>

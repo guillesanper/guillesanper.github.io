@@ -1,0 +1,23 @@
+---
+import BaseLayout from '@src/layouts/BaseLayout.astro';
+import ProjectList from '@src/components/ProjectList.astro';
+import { projects, localizeProjects } from '@src/pages/projects/projects';
+import { getLangFromUrl, useTranslations } from '@src/i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+const title = t('projects.title');
+const description = t('projects.description');
+const localized = localizeProjects(projects, lang);
+---
+
+<BaseLayout title={title} description={description}>
+  <div class='container'>
+    <div class="mb-10">
+      <h1 class="text-3xl font-bold mb-2">{title}</h1>
+      <p class="text-zinc-700 dark:text-zinc-300 text-lg">{description}</p>
+    </div>
+    <ProjectList projects={localized} variant="stacked"/>
+  </div>
+</BaseLayout>
