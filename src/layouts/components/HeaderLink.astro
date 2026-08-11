@@ -16,8 +16,92 @@ const isActive = target === pathname || target === '/' + subpath?.[0];
 
 <a
 	href={href}
-	class:list={[className, { 'border-b border-zinc-500 dark:border-zinc-300': isActive }, { 'text-zinc-600 dark:text-zinc-200 hover:text-zinc-900 dark:hover:text-zinc-50': !isActive }, { 'text-zinc-950 dark:text-zinc-50': isActive }]}
+	aria-current={isActive ? 'page' : undefined}
+	class:list={[
+		'nav-link',
+		className,
+		isActive
+			? 'is-active text-zinc-950 dark:text-zinc-50'
+			: 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-zinc-50'
+	]}
 	{...props}
 >
 	<slot />
 </a>
+
+<style>
+	.nav-link {
+		position: relative;
+		/* Keeps the ::before tint behind the label without needing a wrapper span
+		   around the slot. */
+		isolation: isolate;
+		display: flex;
+		align-items: center;
+		height: 2.25rem;
+		padding-inline: 0.875rem;
+		border-radius: 9999px;
+		transition:
+			color 200ms ease,
+			background-color 200ms ease;
+	}
+
+	/* The hover tint is currentColor at a low opacity, so it darkens in light mode
+	   and lightens in dark mode from a single rule. */
+	.nav-link::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		z-index: -1;
+		border-radius: inherit;
+		background-color: currentColor;
+		opacity: 0;
+		transition: opacity 200ms ease;
+	}
+
+	.nav-link:hover::before,
+	.nav-link:focus-visible::before {
+		opacity: 0.08;
+	}
+
+	/* Replaces the full-width bottom border: a short bar under the label that
+	   grows in on hover, so hovering previews the state the active link is in. */
+	.nav-link::after {
+		content: '';
+		position: absolute;
+		bottom: 0.3rem;
+		left: 50%;
+		width: 0;
+		height: 2px;
+		translate: -50% 0;
+		border-radius: 9999px;
+		background-color: currentColor;
+		opacity: 0;
+		transition:
+			width 220ms ease,
+			opacity 220ms ease;
+	}
+
+	.nav-link:hover::after,
+	.nav-link:focus-visible::after {
+		width: 1.1rem;
+		opacity: 0.35;
+	}
+
+	.nav-link.is-active::after {
+		width: 1.1rem;
+		opacity: 0.75;
+	}
+
+	.nav-link:focus-visible {
+		outline: none;
+		box-shadow: 0 0 0 2px rgb(161 161 170 / 0.9);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.nav-link,
+		.nav-link::before,
+		.nav-link::after {
+			transition: none;
+		}
+	}
+</style>

@@ -24,13 +24,14 @@ interface Props {
 }
 
 // El color de cada pill es el color de marca del propio SVG, para que el borde
-// y el texto vayan a juego con el icono.
-const TECH: Record<string, { color: string; icon: any }> = {
+// y el texto vayan a juego con el icono. `darkColor` es opcional, para marcas
+// cuyo color casi negro no se distingue sobre el fondo oscuro.
+const TECH: Record<string, { color: string; darkColor?: string; icon: any }> = {
   django:       { color: '#44B78B', icon: IconDjango },
   docker:       { color: '#008FE2', icon: IconDocker },
   fastapi:      { color: '#009688', icon: IconFastapi },
   'google cloud': { color: '#4285F4', icon: IconGoogleCloud },
-  kafka:        { color: '#231F20', icon: IconKafka },
+  kafka:        { color: '#231F20', darkColor: '#FFFFFF', icon: IconKafka },
   kubernetes:   { color: '#326CE5', icon: IconKubernetes },
   minio:        { color: '#C72E49', icon: IconMinio },
   nginx:        { color: '#009639', icon: IconNginx },
@@ -62,10 +63,11 @@ const key = name.toLowerCase();
 const tech = TECH[ALIASES[key] ?? key] ?? FALLBACK;
 
 const pillColor = color ?? tech.color;
+const pillColorDark = color ?? tech.darkColor ?? tech.color;
 const Icon = icon ?? tech.icon;
 ---
 
-<span class="tech-pill" style={`--pill-color: ${pillColor};`}>
+<span class="tech-pill" style={`--pill-color: ${pillColor}; --pill-color-dark: ${pillColorDark};`}>
   <span class="tech-pill__glow"></span>
   <span class="tech-pill__body">
     <Icon width="14" height="14" stroke-width="2" />
@@ -75,6 +77,8 @@ const Icon = icon ?? tech.icon;
 
 <style>
   .tech-pill {
+    /* Color efectivo de la pill: cambia al variante oscuro cuando existe. */
+    --pill-c: var(--pill-color);
     position: relative;
     display: inline-flex;
     overflow: hidden;
@@ -83,15 +87,19 @@ const Icon = icon ?? tech.icon;
     vertical-align: middle;
   }
 
+  :global(.dark) .tech-pill {
+    --pill-c: var(--pill-color-dark, var(--pill-color));
+  }
+
   .tech-pill__glow {
     position: absolute;
     inset: -1000%;
     animation: tech-pill-spin 2s linear infinite;
     background: conic-gradient(
       from 90deg at 50% 50%,
-      color-mix(in srgb, var(--pill-color) 0%, transparent) 0%,
-      var(--pill-color) 50%,
-      color-mix(in srgb, var(--pill-color) 0%, transparent) 100%
+      color-mix(in srgb, var(--pill-c) 0%, transparent) 0%,
+      var(--pill-c) 50%,
+      color-mix(in srgb, var(--pill-c) 0%, transparent) 100%
     );
   }
 
@@ -107,13 +115,13 @@ const Icon = icon ?? tech.icon;
     border-radius: 9999px;
     white-space: nowrap;
     backdrop-filter: blur(4px);
-    background-color: color-mix(in srgb, var(--pill-color) 12%, white);
-    color: color-mix(in srgb, var(--pill-color) 80%, black);
+    background-color: color-mix(in srgb, var(--pill-c) 12%, white);
+    color: color-mix(in srgb, var(--pill-c) 80%, black);
   }
 
   :global(.dark) .tech-pill__body {
-    background-color: color-mix(in srgb, var(--pill-color) 18%, #18181b);
-    color: color-mix(in srgb, var(--pill-color) 65%, white);
+    background-color: color-mix(in srgb, var(--pill-c) 18%, #18181b);
+    color: color-mix(in srgb, var(--pill-c) 65%, white);
   }
 
   /* Los SVG de marca traen su propio color; los que no (Kafka, Terraform)
@@ -131,7 +139,7 @@ const Icon = icon ?? tech.icon;
   @media (prefers-reduced-motion: reduce) {
     .tech-pill__glow {
       animation: none;
-      background: var(--pill-color);
+      background: var(--pill-c);
       opacity: 0.6;
     }
   }
