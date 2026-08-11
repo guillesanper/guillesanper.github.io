@@ -1,0 +1,72 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  # Lets you re-run the deploy by hand from the Actions tab.
+  workflow_dispatch:
+
+# The deploy authenticates over OIDC, so no long-lived token is needed.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time, and never cancel one that is already publishing.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Must come before setup-node: `cache: pnpm` shells out to pnpm to locate
+      # the store, so pnpm has to be on the PATH already. The version comes from
+      # the `packageManager` field in package.json.
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      # No --prod here: `pnpm build` runs `astro check` first, which needs the
+      # dev dependencies. Do not set NODE_ENV=production on this job either.
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Every key below is optional and currently unset; an undefined secret
+      # expands to an empty string, which is exactly the local state. Define
+      # them under Settings > Secrets and variables > Actions to switch the
+      # analytics and comment blocks on.
+      - name: Build
+        run: pnpm build
+        env:
+          GTAG_MEASUREMENT_ID: ${{ secrets.GTAG_MEASUREMENT_ID }}
+          GISCUS_REPO: ${{ secrets.GISCUS_REPO }}
+          GISCUS_REPO_ID: ${{ secrets.GISCUS_REPO_ID }}
+          GISCUS_CATEGORY: ${{ secrets.GISCUS_CATEGORY }}
+          GISCUS_CATEGORY_ID: ${{ secrets.GISCUS_CATEGORY_ID }}
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    # deploy-pages requires its own job bound to the github-pages environment.
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

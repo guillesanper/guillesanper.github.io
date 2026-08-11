@@ -1,0 +1,130 @@
+---
+// Import the global.css file here so that it is included on
+// all pages through the use of the <BaseHead /> component.
+import '../../styles/global.css';
+import Favicon from '@src/assets/img/favicon.png';
+import DefaultSocialImage from '@src/assets/img/ava.jpg';
+import ThemeScript from './ThemeScript.astro';
+import LangScript from './LangScript.astro';
+import StructuredData from './StructuredData.astro';
+import { getLangFromUrl, localizePath, useTranslations } from '@src/i18n/utils';
+import { allLangs, defaultLang, langLocale, ogLocale } from '@src/i18n/ui';
+import { AUTHOR_NAME, SITE_TITLE } from '@src/consts';
+import type { ArticleMeta } from '@src/seo';
+
+interface Props {
+	title: string;
+	description: string;
+	image?: string;
+	/** Disables the language redirect (the 404 page has no real counterpart). */
+	noLangRedirect?: boolean;
+	/** Keeps the page out of search results (the 404 page). */
+	noindex?: boolean;
+	article?: ArticleMeta;
+}
+
+const {
+	title,
+	description,
+	image,
+	noLangRedirect = false,
+	noindex = false,
+	article
+} = Astro.props;
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+
+// Social crawlers do not resolve relative URLs, so the preview image has to be
+// absolute. The fallback is a real asset: the template shipped a `/syakir.webp`
+// that does not exist in this project, which meant every share showed nothing.
+const socialImage = new URL(image ?? DefaultSocialImage.src, Astro.site).toString();
+// A page that supplies its own image (a post cover) needs alt text describing
+// that image, not the portrait's.
+const socialImageAlt = image ? title : t('seo.imageAlt');
+
+const alternates = allLangs.map((lang) => ({
+	hreflang: langLocale[lang],
+	href: new URL(localizePath(Astro.url.pathname, lang), Astro.site).toString()
+}));
+const defaultAlternate = new URL(localizePath(Astro.url.pathname, defaultLang), Astro.site).toString();
+
+// The feed is English-only, so it is not localised.
+const feedURL = new URL('/rss.xml', Astro.site).toString();
+const sitemapURL = new URL('/sitemap-index.xml', Astro.site).toString();
+---
+
+<!-- Global Metadata -->
+<meta charset='utf-8' />
+<meta name='viewport' content='width=device-width,initial-scale=1' />
+
+<!-- Applies the stored theme before first paint to avoid a flash -->
+<ThemeScript />
+
+<!-- Applies the stored language before first paint -->
+<LangScript disabled={noLangRedirect} />
+
+<link rel='icon' href={Favicon.src} />
+<meta name='generator' content={Astro.generator} />
+
+<!-- Canonical URL -->
+<link rel='canonical' href={canonicalURL} />
+
+<!-- Language alternates -->
+{alternates.map(({ hreflang, href }) => <link rel='alternate' hreflang={hreflang} href={href} />)}
+<link rel='alternate' hreflang='x-default' href={defaultAlternate} />
+
+<!-- Primary Meta Tags -->
+<title>{title}</title>
+<meta name='description' content={description} />
+<meta name='author' content={AUTHOR_NAME} />
+<meta name='robots' content={noindex ? 'noindex, follow' : 'index, follow, max-image-preview:large'} />
+
+<!-- Feeds and crawl hints -->
+<link rel='alternate' type='application/rss+xml' title={SITE_TITLE} href={feedURL} />
+<link rel='sitemap' type='application/xml' href={sitemapURL} />
+
+<!-- Open Graph / Facebook -->
+<meta property='og:type' content={article ? 'article' : 'website'} />
+<meta property='og:site_name' content={SITE_TITLE} />
+<meta property='og:url' content={canonicalURL} />
+<meta property='og:title' content={title} />
+<meta property='og:description' content={description} />
+<meta property='og:image' content={socialImage} />
+<meta property='og:image:alt' content={socialImageAlt} />
+<meta property='og:locale' content={ogLocale[lang]} />
+{
+	allLangs
+		.filter((other) => other !== lang)
+		.map((other) => <meta property='og:locale:alternate' content={ogLocale[other]} />)
+}
+{
+	article && (
+		<>
+			<meta property='article:published_time' content={article.publishedTime.toISOString()} />
+			{article.modifiedTime && (
+				<meta property='article:modified_time' content={article.modifiedTime.toISOString()} />
+			)}
+			<meta property='article:author' content={AUTHOR_NAME} />
+			{article.tags?.map((tag) => <meta property='article:tag' content={tag} />)}
+		</>
+	)
+}
+
+<!-- Twitter. The card spec uses `name`, not `property`. -->
+<meta name='twitter:card' content='summary_large_image' />
+<meta name='twitter:title' content={title} />
+<meta name='twitter:description' content={description} />
+<meta name='twitter:image' content={socialImage} />
+<meta name='twitter:image:alt' content={socialImageAlt} />
+
+<!-- schema.org -->
+<StructuredData
+	title={title}
+	description={description}
+	canonical={canonicalURL.toString()}
+	image={socialImage}
+	article={article}
+/>

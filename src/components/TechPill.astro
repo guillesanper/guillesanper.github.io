@@ -1,0 +1,138 @@
+---
+// src/components/TechPill.astro
+import IconDjango from '../icons/django.astro';
+import IconDocker from '../icons/docker.astro';
+import IconFastapi from '../icons/fastapi.astro';
+import IconGoogleCloud from '../icons/googleCloud.astro';
+import IconKafka from '../icons/kafka.astro';
+import IconKubernetes from '../icons/kubernetes.astro';
+import IconMinio from '../icons/minio.astro';
+import IconNginx from '../icons/nginx.astro';
+import IconPostgres from '../icons/postgre.astro';
+import IconPython from '../icons/python.astro';
+import IconReact from '../icons/react.astro';
+import IconRedis from '../icons/redis.astro';
+import IconTailwind from '../icons/tailwind.astro';
+import IconTerraform from '../icons/terraform.astro';
+import IconTypescript from '../icons/typescript.astro';
+import IconDefault from '../icons/tech/default.astro';
+
+interface Props {
+  name: string;
+  color?: string; // override, ej: "#F7DF1E"
+  icon?: any;     // override, componente .astro
+}
+
+// El color de cada pill es el color de marca del propio SVG, para que el borde
+// y el texto vayan a juego con el icono.
+const TECH: Record<string, { color: string; icon: any }> = {
+  django:       { color: '#44B78B', icon: IconDjango },
+  docker:       { color: '#008FE2', icon: IconDocker },
+  fastapi:      { color: '#009688', icon: IconFastapi },
+  'google cloud': { color: '#4285F4', icon: IconGoogleCloud },
+  kafka:        { color: '#231F20', icon: IconKafka },
+  kubernetes:   { color: '#326CE5', icon: IconKubernetes },
+  minio:        { color: '#C72E49', icon: IconMinio },
+  nginx:        { color: '#009639', icon: IconNginx },
+  postgresql:   { color: '#336791', icon: IconPostgres },
+  python:       { color: '#3776AB', icon: IconPython },
+  react:        { color: '#58C4DC', icon: IconReact },
+  redis:        { color: '#C6302B', icon: IconRedis },
+  tailwind:     { color: '#38BDF8', icon: IconTailwind },
+  terraform:    { color: '#7B42BC', icon: IconTerraform },
+  typescript:   { color: '#3178C6', icon: IconTypescript },
+};
+
+// Nombres alternativos que pueden aparecer en los tags de un proyecto.
+const ALIASES: Record<string, string> = {
+  gcp: 'google cloud',
+  'google cloud platform': 'google cloud',
+  k8s: 'kubernetes',
+  postgres: 'postgresql',
+  postgre: 'postgresql',
+  'apache kafka': 'kafka',
+  'tailwind css': 'tailwind',
+  tailwindcss: 'tailwind',
+};
+
+const FALLBACK = { color: '#71717A', icon: IconDefault };
+
+const { name, color, icon } = Astro.props;
+const key = name.toLowerCase();
+const tech = TECH[ALIASES[key] ?? key] ?? FALLBACK;
+
+const pillColor = color ?? tech.color;
+const Icon = icon ?? tech.icon;
+---
+
+<span class="tech-pill" style={`--pill-color: ${pillColor};`}>
+  <span class="tech-pill__glow"></span>
+  <span class="tech-pill__body">
+    <Icon width="14" height="14" stroke-width="2" />
+    <span>{name}</span>
+  </span>
+</span>
+
+<style>
+  .tech-pill {
+    position: relative;
+    display: inline-flex;
+    overflow: hidden;
+    border-radius: 9999px;
+    padding: 1px;
+    vertical-align: middle;
+  }
+
+  .tech-pill__glow {
+    position: absolute;
+    inset: -1000%;
+    animation: tech-pill-spin 2s linear infinite;
+    background: conic-gradient(
+      from 90deg at 50% 50%,
+      color-mix(in srgb, var(--pill-color) 0%, transparent) 0%,
+      var(--pill-color) 50%,
+      color-mix(in srgb, var(--pill-color) 0%, transparent) 100%
+    );
+  }
+
+  .tech-pill__body {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    width: 100%;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.78rem;
+    line-height: 1.25rem;
+    border-radius: 9999px;
+    white-space: nowrap;
+    backdrop-filter: blur(4px);
+    background-color: color-mix(in srgb, var(--pill-color) 12%, white);
+    color: color-mix(in srgb, var(--pill-color) 80%, black);
+  }
+
+  :global(.dark) .tech-pill__body {
+    background-color: color-mix(in srgb, var(--pill-color) 18%, #18181b);
+    color: color-mix(in srgb, var(--pill-color) 65%, white);
+  }
+
+  /* Los SVG de marca traen su propio color; los que no (Kafka, Terraform)
+     heredan el del texto de la pill. */
+  .tech-pill__body :global(svg) {
+    flex: none;
+  }
+
+  @keyframes tech-pill-spin {
+    to {
+      transform: rotate(1turn);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tech-pill__glow {
+      animation: none;
+      background: var(--pill-color);
+      opacity: 0.6;
+    }
+  }
+</style>

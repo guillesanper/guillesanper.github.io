@@ -1,0 +1,62 @@
+---
+import { SITE_TITLE, AUTHOR_NAME } from '@src/consts';
+import BaseLayout from '@src/layouts/BaseLayout.astro';
+import { Image } from 'astro:assets';
+import Ava from '@src/assets/img/ava.jpg';
+import Prose from '@src/components/Prose.astro';
+import { projects, localizeProjects } from '@src/pages/projects/projects';
+import ProjectList from '@src/components/ProjectList.astro';
+import PostItem from '@src/components/PostItem.astro';
+import { getLangFromUrl, useTranslations, localizePath } from '@src/i18n/utils';
+import { getPostsFor, entriesOf, type BlogPost } from '@src/i18n/posts';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+const top6Projects = localizeProjects(projects.slice(0, 6), lang);
+const posts = entriesOf(await getPostsFor(lang)).slice(0, 5);
+---
+
+<BaseLayout title={SITE_TITLE + ' - ' + t('site.tagline')} description={t('site.description')}>
+	<div class='container'>
+		<div class='w-full md:flex md:items-center gap-16 mb-10'>
+      <div class="text-pretty leading-9">
+        <h1 class="text-4xl font-bold mb-4">{AUTHOR_NAME}</h1>
+        <Prose>
+          <div class="text-lg">
+            <p>{t('home.intro1')}</p>
+            <p>
+              {t('home.intro2')}
+              <a href={localizePath('/about/', lang)}>{t('home.moreAboutMe')}</a>.
+            </p>
+            </div>
+        </Prose>
+      </div>
+      <Image src={Ava} alt={AUTHOR_NAME} width={300} loading="eager" class="rounded-3xl rotate-3 mx-4 md:mx-0"/>
+		</div>
+		<main>
+      <div class='mt-6 mb-12'>
+        <div class="flex justify-between gap-2 border-b mb-1 dark:border-b-zinc-700">
+          <h2 class="text-lg font-bold mb-3">{t('home.recentPosts')}</h2>
+          <a href={localizePath('/posts/', lang)} class="inline-block py-2 underline dark:prose-invert">{t('home.allPosts')}</a>
+        </div>
+        <div>
+          {
+            posts.map((post: BlogPost) => (
+              <PostItem post={post} />
+            ))
+          }
+        </div>
+        <div class="text-right">
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-between gap-2 mb-1">
+          <h2 class="text-lg font-bold mb-3">{t('home.myProjects')}</h2>
+          <a href={localizePath('/projects/', lang)} class="inline-block py-2 underline dark:prose-invert">{t('home.allProjects')}</a>
+        </div>
+        <ProjectList projects={top6Projects} variant="stacked"/>
+      </div>
+		</main>
+	</div>
+</BaseLayout>

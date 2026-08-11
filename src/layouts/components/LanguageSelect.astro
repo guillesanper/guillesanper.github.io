@@ -1,0 +1,240 @@
+---
+import { getLangFromUrl, useTranslations, localizePath } from '@src/i18n/utils';
+import { allLangs, langShortLabel, languages } from '@src/i18n/ui';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+// Each option carries the already-built URL for its language, so switching is a
+// plain navigation - no client-side path juggling.
+const options = allLangs.map((code) => ({
+	code,
+	label: langShortLabel[code],
+	title: languages[code],
+	href: localizePath(Astro.url.pathname, code)
+}));
+---
+
+{/* A native <select> is not an option here: the browser paints the open list
+	itself, so in dark mode the choices came out white on white. This is our own
+	button + panel, styled like the rest of the header. */}
+<div id='langSwitcher' class='relative px-1.5 py-3' data-open>
+	<!-- No text-* colour on the trigger: inheriting keeps it the same tone as the
+	     GitHub icon and the theme toggle it sits between, in both themes. -->
+	<button
+		type='button'
+		id='langButton'
+		aria-label={t('header.language')}
+		aria-haspopup='menu'
+		aria-expanded='true'
+		aria-controls='langMenu'
+		class='flex items-center gap-1.5 rounded-full border border-transparent px-2.5 py-1.5 text-sm font-medium
+			transition-colors duration-200
+			hover:bg-zinc-100 hover:border-zinc-200 dark:hover:bg-zinc-800/80 dark:hover:border-zinc-700
+			focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400'
+	>
+		<svg
+			xmlns='http://www.w3.org/2000/svg'
+			width='20'
+			height='20'
+			viewBox='0 0 24 24'
+			fill='none'
+			stroke='currentColor'
+			stroke-width='2'
+			stroke-linecap='round'
+			stroke-linejoin='round'
+			class='lucide lucide-globe shrink-0'
+			aria-hidden='true'
+			><circle cx='12' cy='12' r='10'></circle><path d='M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20'
+			></path><path d='M2 12h20'></path></svg
+		>
+		<span>{langShortLabel[lang]}</span>
+		<svg
+			xmlns='http://www.w3.org/2000/svg'
+			width='14'
+			height='14'
+			viewBox='0 0 24 24'
+			fill='none'
+			stroke='currentColor'
+			stroke-width='2.5'
+			stroke-linecap='round'
+			stroke-linejoin='round'
+			class='lucide lucide-chevron-down lang-chevron shrink-0 opacity-70'
+			aria-hidden='true'><path d='m6 9 6 6 6-6'></path></svg
+		>
+	</button>
+
+	<!-- Same floating-surface treatment as the nav pill, with the card radius. -->
+	<div
+		id='langMenu'
+		role='menu'
+		aria-label={t('header.language')}
+		class='lang-menu absolute right-0 top-full z-[1000] mt-2 flex min-w-[11rem] flex-col gap-1 rounded-xl border p-1 shadow-lg
+			bg-white/90 backdrop-blur-md dark:bg-zinc-900/90 dark:border-zinc-700'
+	>
+		{
+			options.map((option) => (
+				<a
+					href={option.href}
+					role='menuitem'
+					data-lang={option.code}
+					aria-current={option.code === lang ? 'true' : undefined}
+					class:list={[
+						'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors duration-200',
+						'focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400',
+						option.code === lang
+							? 'bg-zinc-100 text-zinc-950 dark:bg-zinc-800 dark:text-zinc-50'
+							: 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-50'
+					]}
+				>
+					<span class='flex-1'>{option.title}</span>
+					<svg
+						xmlns='http://www.w3.org/2000/svg'
+						width='16'
+						height='16'
+						viewBox='0 0 24 24'
+						fill='none'
+						stroke='currentColor'
+						stroke-width='2.5'
+						stroke-linecap='round'
+						stroke-linejoin='round'
+						class:list={['lucide lucide-check shrink-0', { invisible: option.code !== lang }]}
+						aria-hidden='true'
+					>
+						<path d='M20 6 9 17l-5-5' />
+					</svg>
+					<span class='text-xs font-medium opacity-60'>{option.label}</span>
+				</a>
+			))
+		}
+	</div>
+</div>
+
+<style>
+	/* Kept out of the class list so the open/closed state is one attribute the
+	   script flips, rather than a handful of utilities it has to keep in sync. */
+	.lang-menu {
+		opacity: 0;
+		visibility: hidden;
+		transform: translateY(-0.25rem) scale(0.96);
+		transform-origin: top right;
+		transition:
+			opacity 150ms ease,
+			transform 150ms ease,
+			visibility 150ms;
+	}
+
+	#langSwitcher[data-open] .lang-menu {
+		opacity: 1;
+		visibility: visible;
+		transform: translateY(0) scale(1);
+	}
+
+	.lang-chevron {
+		transition: transform 150ms ease;
+	}
+
+	#langSwitcher[data-open] .lang-chevron {
+		transform: rotate(180deg);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.lang-menu,
+		.lang-chevron {
+			transition: none;
+		}
+	}
+</style>
+
+<script is:inline>
+	(() => {
+		const root = document.getElementById('langSwitcher');
+		if (!root) return;
+		const button = document.getElementById('langButton');
+		const menu = document.getElementById('langMenu');
+		const items = Array.from(menu.querySelectorAll('[role="menuitem"]'));
+
+		// The markup renders open so the links still work if this script never
+		// runs. Closing here - inline, before the first paint - means nobody sees
+		// the panel flash.
+		root.removeAttribute('data-open');
+		button.setAttribute('aria-expanded', 'false');
+		// Roving focus: Tab steps past the whole menu, arrows move inside it.
+		items.forEach((item) => item.setAttribute('tabindex', '-1'));
+
+		const isOpen = () => root.hasAttribute('data-open');
+
+		const open = (focusIndex) => {
+			root.setAttribute('data-open', '');
+			button.setAttribute('aria-expanded', 'true');
+			if (typeof focusIndex === 'number') items[focusIndex]?.focus();
+		};
+
+		const close = (returnFocus) => {
+			root.removeAttribute('data-open');
+			button.setAttribute('aria-expanded', 'false');
+			if (returnFocus) button.focus();
+		};
+
+		const move = (delta) => {
+			const current = items.indexOf(document.activeElement);
+			items[(current + delta + items.length) % items.length]?.focus();
+		};
+
+		button.addEventListener('click', () => (isOpen() ? close(false) : open()));
+
+		button.addEventListener('keydown', (event) => {
+			if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+			event.preventDefault();
+			open(event.key === 'ArrowDown' ? 0 : items.length - 1);
+		});
+
+		menu.addEventListener('keydown', (event) => {
+			switch (event.key) {
+				case 'ArrowDown':
+					event.preventDefault();
+					move(1);
+					break;
+				case 'ArrowUp':
+					event.preventDefault();
+					move(-1);
+					break;
+				case 'Home':
+					event.preventDefault();
+					items[0]?.focus();
+					break;
+				case 'End':
+					event.preventDefault();
+					items[items.length - 1]?.focus();
+					break;
+			}
+		});
+
+		root.addEventListener('keydown', (event) => {
+			if (!isOpen()) return;
+			if (event.key === 'Escape') {
+				event.preventDefault();
+				close(true);
+			} else if (event.key === 'Tab') {
+				close(false);
+			}
+		});
+
+		document.addEventListener('pointerdown', (event) => {
+			if (isOpen() && !root.contains(event.target)) close(false);
+		});
+
+		items.forEach((item) => {
+			item.addEventListener('click', () => {
+				// Remember the choice so direct visits to the other language bounce
+				// back (see LangScript). The anchor handles the navigation itself, so
+				// middle-click and open-in-new-tab keep working.
+				try {
+					localStorage.setItem('lang', item.dataset.lang);
+				} catch (e) {
+					/* storage blocked; the URL still carries the language */
+				}
+			});
+		});
+	})();
+</script>

@@ -1,0 +1,21 @@
+---
+import Author from '../Author.astro';
+import { CONTACT_EMAIL } from '../../consts';
+import { getLangFromUrl, useTranslations } from '@src/i18n/utils';
+
+const t = useTranslations(getLangFromUrl(Astro.url));
+---
+
+<div
+	class='about-the-author py-4 border-b'
+>
+	<h3 class='font-extrabold uppercase mb-4 text-sm'>{t('author.heading')}</h3>
+	<Author picSize='md' />
+	<div class='author-desc text-[.825rem] my-4'>
+		<p class='mb-3'>{t('author.bio1')}</p>
+		<p>
+			{t('author.bio2')}{' '}
+			<a href={`mailto:${CONTACT_EMAIL}`} class='underline'>{CONTACT_EMAIL}</a>.
+		</p>
+	</div>
+</div>
