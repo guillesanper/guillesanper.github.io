@@ -1,0 +1,128 @@
+---
+import { Image } from 'astro:assets';
+import { slugify, readingTime } from '../utils';
+import FormattedDate from './FormattedDate.astro';
+import type { BlogPost } from '@src/i18n/posts';
+import { getLangFromUrl, useTranslations, localizePath, translateTag } from '@src/i18n/utils';
+
+interface Props {
+	post: BlogPost;
+	/** Full-width variant for the newest post: image beside the text, larger type. */
+	featured?: boolean;
+	/** Grid placement, supplied by the parent (e.g. 'col-span-12 sm:col-span-6'). */
+	class?: string;
+}
+
+const { post, featured = false, class: className = '' } = Astro.props;
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+const { title, description, coverImage, pubDate, tags } = post.data;
+const href = localizePath(`/${post.id}/`, lang);
+const minutes = readingTime(post.body ?? '');
+
+// Haystack for the search box. Tags go in by their translated label, so the
+// reader can search for what they actually see on the card. Folded to lowercase
+// without accents here so the runtime only has to fold the query.
+const searchText = [title, description, ...(tags || []).map((tag: string) => translateTag(tag, lang))]
+	.join(' ')
+	.toLowerCase()
+	.normalize('NFD')
+	.replace(/[̀-ͯ]/g, '');
+---
+
+<article
+	data-post
+	data-search={searchText}
+	class:list={[
+		`group relative overflow-hidden rounded-xl border shadow-sm dark:border-zinc-700
+		 transition-colors duration-300 hover:border-zinc-400 dark:hover:border-zinc-500`,
+		featured ? 'md:grid md:grid-cols-2 md:items-stretch' : 'flex flex-col',
+		className
+	]}
+>
+	<div class:list={['overflow-hidden', featured ? 'md:h-full' : '']}>
+		{
+			coverImage ? (
+				<Image
+					src={coverImage}
+					alt=''
+					widths={featured ? [600, 1000, 1400] : [400, 800]}
+					sizes={featured ? '(min-width: 768px) 512px, 100vw' : '(min-width: 640px) 480px, 100vw'}
+					loading={featured ? 'eager' : 'lazy'}
+					class:list={[
+						'w-full object-cover transition-transform duration-500 motion-safe:group-hover:scale-[1.03]',
+						featured ? 'aspect-[16/10] md:h-full' : 'aspect-[16/9]'
+					]}
+				/>
+			) : (
+				/* Covers are optional in the schema. Without a placeholder a post that
+				   lacks one would leave a ragged hole in the grid. */
+				<div
+					class:list={[
+						`flex items-center justify-center bg-gradient-to-br from-zinc-100 to-zinc-200
+						 dark:from-zinc-800 dark:to-zinc-900`,
+						featured ? 'aspect-[16/10] md:h-full' : 'aspect-[16/9]'
+					]}
+					aria-hidden='true'
+				>
+					<span class:list={['font-black text-zinc-300 dark:text-zinc-700', featured ? 'text-7xl' : 'text-5xl']}>
+						{title.charAt(0)}
+					</span>
+				</div>
+			)
+		}
+	</div>
+
+	<div class:list={['flex flex-col grow', featured ? 'p-6 md:justify-center md:p-8' : 'p-5']}>
+		<div class='flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400'>
+			{
+				featured && (
+					<span class='rounded-2xl bg-zinc-900 px-2 py-0.5 text-xs font-medium text-white dark:bg-zinc-100 dark:text-zinc-900'>
+						{t('post.featured')}
+					</span>
+				)
+			}
+			<FormattedDate date={pubDate} />
+			<span aria-hidden='true'>·</span>
+			<span>{t('post.readingTime', { minutes })}</span>
+		</div>
+
+		<h2 class:list={['mt-2 font-bold leading-snug', featured ? 'text-2xl md:text-3xl' : 'text-lg']}>
+			{/* `after:inset-0` makes the whole card clickable without nesting the tag
+			    links inside an <a>, which would be invalid and unreachable by keyboard. */}
+			<a href={href} class='no-underline after:absolute after:inset-0 group-hover:underline decoration-2 underline-offset-4'>
+				{title}
+			</a>
+		</h2>
+
+		<p
+			class:list={[
+				'mt-2 text-pretty text-zinc-600 dark:text-zinc-300',
+				featured ? 'line-clamp-3' : 'line-clamp-2 text-sm'
+			]}
+		>
+			{description}
+		</p>
+
+		{
+			(tags || []).length > 0 && (
+				/* z-10 keeps these above the title link's stretched pseudo-element. */
+				<div class='relative z-10 mt-auto flex flex-wrap gap-2 pt-4'>
+					{(tags || []).map((tag: string) => (
+						<a
+							class='border border-zinc-300 dark:border-zinc-700 rounded-2xl
+							text-sm text-zinc-700 dark:text-zinc-300 no-underline px-2 py-0.5
+							transition-all duration-700
+							hover:border-zinc-700 dark:hover:border-zinc-300'
+							href={localizePath(`/tags/${slugify(tag)}/`, lang)}
+						>
+							{translateTag(tag, lang)}
+						</a>
+					))}
+				</div>
+			)
+		}
+	</div>
+</article>

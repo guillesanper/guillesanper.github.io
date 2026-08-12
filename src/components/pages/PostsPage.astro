@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '@src/layouts/BaseLayout.astro';
-import PostsByYear from '@src/components/PostsByYear.astro';
+import PostGallery from '@src/components/PostGallery.astro';
+import PostSearch from '@src/components/PostSearch.astro';
 import { getLangFromUrl, useTranslations } from '@src/i18n/utils';
 import { getPostsFor, entriesOf } from '@src/i18n/posts';
 
@@ -14,10 +15,11 @@ const posts = entriesOf(await getPostsFor(lang));
 
 <BaseLayout title={title} description={description}>
   <div class='container'>
-    <div class="mb-10">
+    <div class="mb-8">
       <h1 class="text-3xl font-bold mb-2">{title}</h1>
       <p class="text-zinc-700 dark:text-zinc-300 text-lg">{description}</p>
     </div>
-    <PostsByYear posts={posts}/>
+    <PostSearch />
+    <PostGallery posts={posts}/>
   </div>
 </BaseLayout>

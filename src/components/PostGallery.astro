@@ -1,0 +1,56 @@
+---
+import PostCard from './PostCard.astro';
+import type { BlogPost } from '@src/i18n/posts';
+
+interface Props {
+	/** Newest first. `getPostsFor` already sorts them. */
+	posts: BlogPost[];
+}
+
+const { posts } = Astro.props;
+
+// Same grouping as PostsByYear, which still serves the home page and the tag
+// pages untouched. Duplicated rather than shared so changing the gallery can
+// never move those two.
+function groupPostsByYear(posts: BlogPost[]) {
+	const grouped = posts.reduce(
+		(acc, post) => {
+			const year = post.data.pubDate.getFullYear();
+			if (!acc[year]) acc[year] = [];
+			acc[year].push(post);
+			return acc;
+		},
+		{} as Record<number, BlogPost[]>
+	);
+
+	return Object.entries(grouped)
+		.sort(([a], [b]) => Number(b) - Number(a))
+		.map(([year, posts]) => ({
+			year: Number(year),
+			posts: posts.sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime())
+		}));
+}
+
+const [featured, ...rest] = posts;
+const groupedPosts = groupPostsByYear(rest);
+---
+
+{/* No wrapper: the margin rides on the card itself, so filtering it out leaves
+    no orphaned gap above the first year. */}
+{featured && <PostCard post={featured} featured class='mb-12' />}
+
+{
+	groupedPosts.map(({ year, posts }) => (
+		<section class='mb-12' data-year-group>
+			<div class='flex items-center gap-4 mb-5'>
+				<h2 class='text-xl font-bold'>{year}</h2>
+				<span class='h-px grow bg-zinc-200 dark:bg-zinc-800' />
+			</div>
+			<div class='grid grid-cols-12 gap-5'>
+				{posts.map((post: BlogPost) => (
+					<PostCard post={post} class='col-span-12 sm:col-span-6' />
+				))}
+			</div>
+		</section>
+	))
+}
