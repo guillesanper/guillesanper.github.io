@@ -44,15 +44,11 @@ jobs:
       # Every key below is optional and currently unset; an undefined secret
       # expands to an empty string, which is exactly the local state. Define
       # them under Settings > Secrets and variables > Actions to switch the
-      # analytics and comment blocks on.
+      # analytics block on.
       - name: Build
         run: pnpm build
         env:
           GTAG_MEASUREMENT_ID: ${{ secrets.GTAG_MEASUREMENT_ID }}
-          GISCUS_REPO: ${{ secrets.GISCUS_REPO }}
-          GISCUS_REPO_ID: ${{ secrets.GISCUS_REPO_ID }}
-          GISCUS_CATEGORY: ${{ secrets.GISCUS_CATEGORY }}
-          GISCUS_CATEGORY_ID: ${{ secrets.GISCUS_CATEGORY_ID }}
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

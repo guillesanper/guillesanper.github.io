@@ -1,6 +1,5 @@
 import { GITHUB_URL } from "../../consts";
 import { defaultLang, type Lang } from "../../i18n/ui";
-// import { getRepositoryDetails } from "../../utils";
 
 export interface Project {
   name: string;
@@ -13,10 +12,6 @@ export interface Project {
   i18n?: Partial<Record<Lang, { name?: string; description?: string }>>;
   [key: string]: any;
 }
-
-// To pull stars/forks/description straight from the GitHub API, spread
-// `...(await getRepositoryDetails('<user>/<repo>'))` into an entry below and set
-// GITHUB_PERSONAL_ACCESS_TOKEN in .env (see .env.example).
 
 export const projects: Project[] = [
   {

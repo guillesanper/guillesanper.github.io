@@ -1,9 +1,5 @@
 ---
-import { Image } from 'astro:assets';
 import type { Project } from '../pages/projects/projects'
-import { kFormatter } from '../utils'
-import GithubWhite from '@src/assets/img/github-mark-white.svg';
-import GithubBlack from '@src/assets/img/github-mark.svg';
 import TechPill from './TechPill.astro';
 import { getLangFromUrl, useTranslations, localizePath } from '@src/i18n/utils';
 
@@ -29,29 +25,9 @@ const cardClass = stacked
       <article class={`${cardClass} border dark:border-zinc-700 rounded-xl shadow-sm p-5 transition-colors duration-300 hover:border-zinc-400 dark:hover:border-zinc-500`}>
         <div class={stacked ? 'md:flex md:items-start md:justify-between md:gap-10' : ''}>
           <div class={stacked ? 'min-w-0 md:flex-1' : ''}>
-            <div class="flex justify-between items-start gap-3">
-              <h3 class="font-semibold text-lg">
-                <a class="underline" href={project.demoLink} target="_blank" rel={project.demoLinkRel}>{project.name}</a>
-              </h3>
-
-              {project.stargazers_count !== undefined && !stacked && (
-                <div class='shrink-0'>
-                  <a
-                    href={project.html_url}
-                    target="_blank"
-                    class='border border-zinc-300 dark:border-zinc-700 rounded-2xl
-                        text-xs text-zinc-700 dark:text-zinc-300 no-underline px-2 py-0.5
-                        transition-all duration-700
-                      hover:border-zinc-700 dark:hover:border-zinc-300
-                        flex items-center gap-1
-                  '>
-                    <Image src={GithubBlack} height={12} class='dark:hidden' alt={t('projects.githubStars')} />
-                    <Image src={GithubWhite} height={12} class='hidden dark:block' alt={t('projects.githubStars')} />
-                    {kFormatter(project.stargazers_count)} {t('projects.stars')}
-                  </a>
-                </div>
-              )}
-            </div>
+            <h3 class="font-semibold text-lg">
+              <a class="underline" href={project.demoLink} target="_blank" rel={project.demoLinkRel}>{project.name}</a>
+            </h3>
 
             <div class={`text-zinc-600 dark:text-zinc-300 mt-2 mb-4 ${stacked ? 'text-pretty' : 'line-clamp-3 min-h-[72px]'}`}>
               <p>{project.description}</p>
@@ -69,21 +45,6 @@ const cardClass = stacked
           <div class={stacked
             ? 'flex items-center gap-4 mt-5 md:mt-0 md:flex-col md:items-end md:gap-3 md:shrink-0'
             : 'flex justify-end gap-3 mt-4'}>
-            {project.stargazers_count !== undefined && stacked && (
-              <a
-                href={project.html_url}
-                target="_blank"
-                class='border border-zinc-300 dark:border-zinc-700 rounded-2xl
-                    text-xs text-zinc-700 dark:text-zinc-300 no-underline px-2 py-0.5
-                    transition-all duration-700
-                  hover:border-zinc-700 dark:hover:border-zinc-300
-                    flex items-center gap-1 shrink-0
-              '>
-                <Image src={GithubBlack} height={12} class='dark:hidden' alt={t('projects.githubStars')} />
-                <Image src={GithubWhite} height={12} class='hidden dark:block' alt={t('projects.githubStars')} />
-                {kFormatter(project.stargazers_count)} {t('projects.stars')}
-              </a>
-            )}
             {
               project.postLink &&
               <a class="underline flex items-center gap-2 whitespace-nowrap" href={localizePath(project.postLink, lang)}>
