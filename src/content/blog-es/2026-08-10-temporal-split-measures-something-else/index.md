@@ -3,8 +3,13 @@ title: 'Tu split temporal probablemente mide otra cosa'
 description: 'Cambiar una sola clave de agrupación movió el F1-macro de un detector de intrusiones de 0.2809 a 0.7721, sin tocar la garantía cronológica ni el modelo. Esta es la anatomía de un resultado publicado que era falso por un factor de ~4.'
 tags: ["Machine Learning", "Security", "Python"]
 pubDate: '2026-08-10'
+updatedDate: '2026-10-18'
 coverImage: './cover.jpg'
 ---
+
+> **Actualización, octubre de 2026: la descomposición de este post no sobrevive a una re-medición.** `order_idx` se derivaba del orden alfabético de los CSV, no de la hora real de captura. Con el orden de captura corregido y el resto del código igual, los tres protocolos miden `random` 0.9453 → `sub-label` 0.6467 → `class` 0.6547. El artefacto de taxonomía al que este post atribuye el 76 % de la caída ya no es medible (−0.008). Su única vía era el umbral compartido de Stage 1, y con el orden corregido los dos protocolos aterrizan en umbrales casi iguales. Un experimento de control, con el código actual y el orden alfabético restaurado, reproduce exactamente las cifras de agosto, así que el cambio tiene una sola causa.
+>
+> Lo que sigue en pie: los hechos del dataset (bajo `class`, el test de martes es 100 % SSH-Patator y el 35 % del de miércoles es GoldenEye y Heartbleed), cómo el acoplamiento a través de Stage 1 extiende un cambio a todas las clases, el argumento para conservar la etiqueta cruda como procedencia, y el veredicto sobre Botnet, que se ha endurecido. Con 12,6× más filas de entrenamiento y Stage 1 dejando pasar todo el test de Botnet, Stage 2 sigue en 0.00 bajo el split temporal. La re-medición está documentada en el [repositorio](https://github.com/guillesanper/sentinel-platform/blob/temporal-fix/docs/ml/README.md). Dejo el post tal como se publicó, porque el método se sostiene aunque las cifras no lo hicieran.
 
 Un corte cronológico no es anti-fuga por ser cronológico. Lo es respecto a la **unidad** sobre la
 que corta. Si esa unidad agrega procesos que ocurrieron en serie, el corte deja de separar "antes"
@@ -21,7 +26,7 @@ para saber que lo era.
 
 Sentinel tiene dos tracks paralelos: eventos de log (ensemble de tres detectores, 25 features) y
 flujos de red (cascada Isolation Forest → XGBoost, 78 features de CICFlowMeter). El track de flujos
-se integró desde un trabajo previo sobre CICIDS2017 que reportaba F1-macro 0.9516 y que admitía en
+se integró desde [un trabajo previo mío](/es/2025-11-10-intrusion-detection-cascade/) sobre CICIDS2017 que reportaba F1-macro 0.9516 y que admitía en
 su propia §10.1 un fallo metodológico: partición aleatoria estratificada por fila sobre una captura
 continua. CICIDS2017 es tráfico real capturado durante cinco días; los flujos de una misma ráfaga de
 ataque —mismo host, mismo escenario, milisegundos de diferencia— son casi idénticos. Un split
@@ -84,7 +89,7 @@ y la lectura que se publicó fue:
 > La caída de 0.9166 a 0.2809 en F1-macro no es una regresión: es la magnitud de la fuga.
 
 Es una frase con forma de conclusión: cuantifica exactamente lo que el trabajo previo admitía no
-haber controlado. Fue el resultado más citado de la rama durante semanas.
+haber controlado. Fue el resultado de referencia de la rama hasta la revisión que sigue.
 
 Es falsa por un factor de ~4.
 
@@ -176,7 +181,7 @@ cambia es que bajo `sub-label` ninguna herramienta queda íntegramente fuera de 
 
 ## El artefacto no se queda donde debería
 
-Este es el hallazgo que no esperábamos y el que más justifica el cambio de default.
+Este es el hallazgo que no esperaba y el que más justifica el cambio de default.
 
 `Scan` y `DDoS` tienen **una sola herramienta** cada una. Su bloque se parte **idénticamente, bit a
 bit**, bajo los dos protocolos: `(friday, Scan)` y `(friday, PortScan)` son el mismo conjunto de
