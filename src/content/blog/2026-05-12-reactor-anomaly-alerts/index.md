@@ -1,49 +1,75 @@
 ---
-title: 'Alert Generation for a Simulated Nuclear Reactor'
-description: 'Building an ML alerting layer on top of a physics simulation, and why the hard problem was deciding what deserves to wake someone up.'
+title: 'Alert Generation for a Simulated Nuclear Reactor: Ground Truth First'
+description: 'Before an ML layer can decide what deserves to wake someone up, it needs data where the right answer is known. A physics simulation of a pressurised water reactor, instrument-fault detectors on a Kafka stream, and the alerting design that comes next.'
 tags: ["Machine Learning", "Simulation", "Python"]
 pubDate: '2026-05-12'
+updatedDate: '2026-10-18'
 coverImage: './cover.jpg'
 ---
 
-This project has two halves: a physics simulation of a pressurised water reactor, and a machine learning layer that decides when its state warrants an alert. The second half was much harder than I expected, and not for modelling reasons.
+> **Correction.** An earlier version of this post described a regime classifier, per-regime anomaly models and an alerting policy as if they were built. They aren't yet. They are the design for the next phase. This version describes what exists in the repository today and marks the rest as planned.
+
+ReactorGuard is meant to end with a machine learning layer that decides when a reactor's state deserves an alert. It doesn't start there. You can't evaluate a detector without data where you know which samples are faults, and real reactor fault data is neither public nor plentiful. So the work so far has gone into three things: a stream of sensor readings, detectors for broken instruments, and a physics simulation that can generate faults on demand with the right answer attached.
+
+## Instrument faults first, on a real process
+
+Before simulating anything, the pipeline ran on the Tennessee Eastman Process (TEP), a chemical-plant benchmark with 52 sensor channels and labelled fault runs. Readings go through Kafka (Strimzi on GKE, with a local Docker setup that's verified for now), and a validation consumer runs five detectors over every reading: stuck value, rate of change, out of range, cross-correlation and a Kalman-based drift detector. Each detected fault becomes an event on an `anomaly-alerts` topic.
+
+Two design choices did most of the work.
+
+**No detector reads the `quality` flag.** `quality` describes whether the transmitter can be trusted, which is exactly what the validator is deciding. Reading it as an input would make the evaluation circular. The validator writes it and never reads it.
+
+**Thresholds are fractions of each channel's alarm band, not engineering units.** One absolute threshold shared by 52 channels measured in kg/s, bar and mol% means something different on every one of them.
+
+Measured on TEP with injected faults:
+
+| Detector | Precision | Recall | False-positive rate |
+| --- | --- | --- | --- |
+| stuck | 1.000 | 0.814 | 0.0000 |
+| out of range | 1.000 | 1.000 | 0.0000 |
+| noise spike | 1.000 | 0.778 | 0.0000 |
+| drift | 0.993 | 0.930 | 0.0001 |
+
+The most useful finding was a negative one. TEP samples every 180 seconds, not every second, and that broke three defaults I had inherited from the design document: the Kalman process noise, the drift threshold, which at its original value fired on 48% of normal operation, and feature windows sized in seconds rather than samples. At that cadence a slow instrument drift is **not detectable** with this mechanism. The usable band is only about 10–18 alarm-band widths per hour. That limit is written into the code as a named constant, so nobody tunes the detector expecting it to see something it can't.
+
+Alert events carry a deterministic UUID5 built from the fault and its source reading. Kafka delivers at least once, so a reprocessed reading produces the same `alert_id` and can be deduplicated downstream instead of paging twice.
 
 ## The simulation
 
-The reactor model is a simplified point-kinetics core coupled to a thermal-hydraulic loop. Neutron population, delayed neutron precursors, fuel and coolant temperature, primary loop pressure and flow. It's a stiff system of ODEs, integrated with an implicit solver because explicit methods either blow up or force absurdly small timesteps.
+TEP has no reactor physics, and the alerting layer needs physically coupled signals. So the second half is a simplified model of a generic 3000 MWt pressurised water reactor, which isn't a real plant:
 
-Simplified in the sense that it would make an actual nuclear engineer wince. It is not a licensing-grade model and it isn't meant to be. What matters for the ML layer is that it produces *physically coupled* signals — when coolant flow drops, fuel temperature rises, reactivity responds through the negative temperature coefficient, and power settles at a new point. Those correlations are what an anomaly detector has to learn.
+- point kinetics with six delayed-neutron precursor groups
+- three thermal nodes: fuel, core outlet and steam generator
+- primary pressure, void fraction, coolant flow, and a PI rod controller
+- reactivity feedback from fuel temperature (Doppler), moderator temperature and void
 
-This turned out to be the whole reason for simulating rather than generating synthetic data directly. Randomly perturbed signals give you a detector that learns noise thresholds. Physically coupled signals give you one that can notice a *combination* is impossible even when no individual reading is out of range.
+It's simplified enough to make a nuclear engineer wince, and the neutronic coefficients are literature placeholders. What matters is that its signals are coupled: cut coolant flow and fuel temperature rises, reactivity responds through the negative temperature coefficient, and power settles at a new point. A detector trained on independently perturbed signals learns noise thresholds. A detector trained on coupled ones can learn that a *combination* of readings is impossible even when each reading is in range.
 
-## What counts as an anomaly
+Three properties I insisted on, each with a measurement behind it:
 
-The obvious framing is: learn normal operation, flag deviations. That produces an unusable system, and the reason is worth stating plainly.
+- **Equilibrium is derived, not typed in.** Initial temperatures and heat-transfer coefficients come from power, flow and inlet temperature. After 24 simulated hours at nominal power the maximum relative derivative is 6e-17.
+- **Energy is conserved by construction.** The same heat-capacity term appears on both sides of each transport equation, so the three node equations sum to exactly generated minus removed heat. Over a 2,000-step ramp the energy closes to 2e-15.
+- **The solver is checked against a second one.** Integration uses scipy's LSODA, which switches between stiff and non-stiff methods on its own. Radau agrees with it to 6.5e-8, and the trace is byte-identical across processes.
 
-A reactor is not in one steady state. It ramps, it follows load, it goes through startup and shutdown, control rods move, xenon builds up and burns off over hours. All of that is deviation from any given "normal", and all of it is expected. A detector trained on steady-state full-power operation fires continuously during a routine ramp.
+On top of the model sits a fault catalogue on two separate axes. **Process faults** change the plant: a thermal excursion from inserted reactivity, a coolant flow reduction, void formation after a leak. **Instrument faults** change only the reading: drift, stuck, spike, bias, intermittent. A scenario planner draws runs from both against a severity budget and tracks how well the space is covered. Every sample comes out labelled with its true state and whether the reading is corrupted.
 
-So the model is conditioned on operating regime. A classifier assigns the current state to one of five regimes — startup, ramp-up, steady, load-follow, shutdown — and separate anomaly models are trained per regime. A pressure trajectory that is alarming at steady state is entirely normal during startup, and the system needs to know which one it's looking at.
+## The alerting layer: planned design
 
-## The alerting layer, which is where the actual difficulty was
+The ML layer isn't built yet. The training script and API routes are scaffolding. But the design is clear enough to write down, because it came from getting simple versions wrong on paper first.
 
-Getting a detector to score anomalies is a modelling exercise. Turning scores into alerts is a design problem, and I did it badly twice before it worked.
+**Thresholding an anomaly score doesn't work.** A reactor isn't in one steady state. It starts up, ramps, follows load and shuts down, and every transition looks like a deviation. A detector trained on steady full-power operation would fire throughout a routine ramp.
 
-**Attempt one: threshold the anomaly score.** Alerts fired constantly during transients. Every regime boundary produced a burst. Unusable within minutes.
+**A debounce window trades false positives for slow detection,** and the transients that matter most are the fast ones.
 
-**Attempt two: threshold with a debounce window.** Better, but it introduced a delay that scaled with the window, and the transients that mattered most were exactly the fast ones. I had traded false positives for slow detection of the real thing.
+The plan is to separate detection from notification:
 
-**What worked: separate detection from notification, and make severity a function of persistence and physical consequence.**
+- Condition detection on the **operating regime** (startup, ramp, steady, load-follow, shutdown), so a pressure trajectory that is alarming at steady state isn't flagged during startup.
+- Log every anomaly to a complete, quiet stream. The `anomaly-alerts` topic already plays that role for instrument faults.
+- Derive **severity from proximity to a safety limit,** not from the size of the anomaly score. A small deviation in a parameter near its limit should outrank a large one with plenty of margin.
+- Gate notification on **persistence,** and escalate faster when **coupled signals drift together,** because coupling makes sensor noise an unlikely explanation.
 
-The detector runs continuously and writes every anomaly to a log. That log is complete and quiet — nothing pages anyone. On top of it sits an alerting policy:
-
-- **Severity** is derived from which physical quantity is drifting and how close it is to a safety limit, not from the magnitude of the anomaly score. A small deviation in a parameter near its limit outranks a large deviation in one with plenty of margin.
-- **Persistence** gates notification. A single anomalous sample is logged; sustained anomaly across a window escalates.
-- **Correlated anomalies escalate faster than isolated ones.** Three coupled signals drifting together is a much stronger signal of a real fault than one signal drifting alone — the coupling means it's unlikely to be sensor noise.
-
-That last rule is only possible because the simulation produces physically coupled data. It's the payoff for building the physics properly.
+That last rule is the reason for building the physics instead of generating synthetic noise. Whether it holds up is something the simulator will now let me measure: time to alert, alerts per hour during normal transients, and recall over the fault scenarios.
 
 ## The thing I'd tell myself at the start
 
-I assumed the interesting work was the anomaly detection model, and that alerting was plumbing on top. It's the other way around. The detector was a few days. The alerting policy took weeks, because it encodes a judgement — what is worth a human's attention, and what is merely unusual — and no amount of model tuning produces that judgement for you.
-
-Most of the failures in monitoring systems I've read about are not detection failures. They're alerting failures: the signal was in the logs, and it was buried under a thousand other alerts nobody trusted anymore.
+I assumed the interesting work was the anomaly model. So far, everything that mattered has been about ground truth: which samples are really faults, which faults a detector can physically see at a given cadence, and whether the simulated plant conserves energy. Without those answers an alerting policy is just a set of opinions.
