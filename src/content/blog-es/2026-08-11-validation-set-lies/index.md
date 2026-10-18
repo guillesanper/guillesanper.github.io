@@ -3,8 +3,11 @@ title: 'El conjunto de validación miente en cuanto dejas de barajar'
 description: 'Reportar el punto de operación del mismo conjunto sobre el que eliges el umbral es correcto por accidente con un split aleatorio. Con partición temporal deja de serlo, y la cifra de seguridad más cargada del diseño estaba equivocada por un factor de 14.'
 tags: ["Machine Learning", "Security", "Python"]
 pubDate: '2026-08-11'
+updatedDate: '2026-10-18'
 coverImage: './cover.jpg'
 ---
+
+> **Actualización, octubre de 2026.** El bug y el arreglo descritos aquí siguen en pie, y el hueco reapareció al re-medir: bajo `sub-label`, el recall de Stage 1 es 0.760 en validación frente a 0.560 en test, y bajo `random` el hueco es de +0.001. Cambiaron dos cosas. La descomposición que este post da por buena en «Lo que no cambia» no sobrevivió a una re-medición posterior con los ficheros en orden real de captura (ver la nota del [post anterior](/es/2026-08-10-temporal-split-measures-something-else/)). Y con ese orden, la fracción de ataques que Stage 1 no puede recuperar bajo el protocolo por defecto es el 44,0 %, no el 19,6 %.
 
 Elegir un umbral sobre validación y **reportar el punto de operación de ese mismo conjunto** es
 inofensivo con un split aleatorio. Deja de serlo en cuanto la partición es temporal. El atajo no era
@@ -90,7 +93,7 @@ cuatro de validación, sin marca de ninguna clase:
 }
 ```
 
-Nadie mintió y nadie se saltó una revisión. La suite estaba en verde con más del 90 % de coverage,
+Nadie mintió y nadie se saltó una revisión. La suite estaba en verde,
 porque cada función hacía exactamente lo que su test comprobaba.
 
 ## Cómo se detectó: aritmética, no intuición
@@ -182,7 +185,7 @@ bloque de métricas.
 Eso importa porque el track de flujos tiene otro resultado publicado que depende de esas métricas
 end-to-end: una descomposición que atribuye la caída de F1-macro entre protocolos a fuga por
 casi-duplicados (0.148) frente a artefacto de taxonomía (0.475). Esa descomposición **se sostiene
-entera**. Delimitar qué parte de un resultado invalida un bug es parte del trabajo, y hacerlo mal en
+entera** frente a este bug. *(No se sostuvo frente a uno posterior; ver la nota del principio.)* Delimitar qué parte de un resultado invalida un bug es parte del trabajo, y hacerlo mal en
 cualquiera de las dos direcciones tiene coste: exagerar el alcance tira resultados válidos y quema
 credibilidad; minimizarlo deja publicado lo que ya no se sostiene. La regla operativa es rastrear la
 procedencia de cada cifra hasta la llamada que la produjo, no razonar por cercanía en el JSON.
@@ -269,7 +272,7 @@ prometiera la otra.
 
 Los dos errores de este proyecto son el mismo error a dos niveles. **Un número honesto sobre el
 conjunto equivocado sigue siendo un número deshonesto.** El primero puso la frontera de la
-*partición* en el sitio equivocado; el segundo, la del *reporte*. Los dos sobrevivieron meses a una
-suite en verde con más del 90 % de coverage, porque ningún test puede comprobar qué pregunta creías
+*partición* en el sitio equivocado; el segundo, la del *reporte*. Los dos sobrevivieron a una
+suite en verde, porque ningún test puede comprobar qué pregunta creías
 estar contestando. Lo único que los detectó, las dos veces, fue construir el protocolo de control que
 aísla un factor.

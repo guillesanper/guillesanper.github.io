@@ -3,8 +3,11 @@ title: 'The validation set lies the moment you stop shuffling'
 description: 'Reporting the operating point of the same set you picked the threshold on is correct by accident under a random split. Under a temporal one it stops being correct, and the most safety-critical figure in the design was off by a factor of 14.'
 tags: ["Machine Learning", "Security", "Python"]
 pubDate: '2026-08-11'
+updatedDate: '2026-10-18'
 coverImage: './cover.jpg'
 ---
+
+> **Update, October 2026.** The bug and the fix described here stand, and the gap reappeared when I re-measured: under `sub-label`, Stage 1 recall is 0.760 on validation against 0.560 on test, and under `random` the gap is +0.001. Two things changed. The decomposition this post calls sound in "What doesn't change" did not survive a later re-measurement with the files in real capture order (see the note on [the previous post](/2026-08-10-temporal-split-measures-something-else/)). And with that order, the share of attacks Stage 1 cannot recover under the default protocol is 44.0%, not 19.6%.
 
 Picking a threshold on validation and **reporting the operating point of that same set** is harmless
 under a random split. It stops being harmless the moment the split is temporal. The shortcut wasn't
@@ -90,7 +93,7 @@ four from validation, with no marking of any kind:
 }
 ```
 
-Nobody lied and nobody skipped a review. The suite was green with over 90% coverage, because every
+Nobody lied and nobody skipped a review. The suite was green, because every
 function did exactly what its test checked.
 
 ## How it was caught: arithmetic, not intuition
@@ -180,7 +183,7 @@ metrics block.
 
 That matters because the flow track has another published result that depends on those end-to-end
 metrics: a decomposition attributing the F1-macro drop between protocols to near-duplicate leakage
-(0.148) versus taxonomy artefact (0.475). That decomposition **holds up in full**. Delimiting which
+(0.148) versus taxonomy artefact (0.475). That decomposition **holds up in full** against this bug. *(It did not hold up against a later one; see the note at the top.)* Delimiting which
 part of a result a bug invalidates is part of the work, and getting it wrong in either direction has
 a cost: overstating the scope throws away valid results and burns credibility; understating it
 leaves published what no longer stands. The operative rule is to trace the provenance of each figure
@@ -267,6 +270,6 @@ the right one for its question; what was missing was for its name not to promise
 
 The two bugs in this project are the same bug at two levels. **An honest number over the wrong set is
 still a dishonest number.** The first put the *split* boundary in the wrong place; the second, the
-*reporting* one. Both survived months of a green suite with over 90% coverage, because no test can
+*reporting* one. Both survived a green suite, because no test can
 check which question you thought you were answering. The only thing that caught them, both times,
 was building the control protocol that isolates one factor.
