@@ -1,16 +1,22 @@
 # Dependabot version updates.
 # https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
 version: 2
+
+# Everything below lands in a single weekly PR instead of one PR per dependency.
+multi-ecosystem-groups:
+  all-dependencies:
+    schedule:
+      interval: "weekly"
+
 updates:
   # "npm" is the ecosystem name for the whole Node family; it reads pnpm-lock.yaml.
   - package-ecosystem: "npm"
     directory: "/"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
+    patterns: ["*"]
+    multi-ecosystem-group: "all-dependencies"
 
   # Keeps the action versions in .github/workflows/ from going stale.
   - package-ecosystem: "github-actions"
     directory: "/"
-    schedule:
-      interval: "weekly"
+    patterns: ["*"]
+    multi-ecosystem-group: "all-dependencies"
