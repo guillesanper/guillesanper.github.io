@@ -1,0 +1,42 @@
+name: Build
+
+# Checks that the site still builds before a PR (including Dependabot's weekly
+# one) is merged. deploy.yml only runs on main, so without this a broken
+# dependency bump would first show up as a failed deploy.
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# A new push to the same PR cancels the build still running for the old one.
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Same setup as deploy.yml: pnpm before setup-node so `cache: pnpm` works.
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Runs `astro check` and `astro build`. The analytics and Giscus secrets
+      # are left out on purpose: the build works without them, and PRs from
+      # Dependabot cannot read repository secrets anyway.
+      - name: Build
+        run: pnpm build
