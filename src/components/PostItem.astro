@@ -9,22 +9,24 @@ const { post }: Record<string, any> | { post: BlogPost } = Astro.props
 
 const lang = getLangFromUrl(Astro.url);
 ---
-<div class='flex flex-col sm:flex-row gap-2 sm:items-center  border-b py-2 mb-1 capitalize dark:border-b-zinc-700'>
-  <div class='text-zinc-700 text-sm w-24 dark:text-zinc-300 shrink-0'>
+<div class='group flex flex-col sm:flex-row gap-2 sm:items-center border-b py-3 px-2 -mx-2 rounded-md
+  transition-colors duration-200 hover:bg-zinc-50 dark:border-b-zinc-700 dark:hover:bg-zinc-800/40'>
+  <div class='text-zinc-500 text-sm w-24 dark:text-zinc-400 shrink-0'>
     <FormattedDate date={post.data.pubDate} />
   </div>
   <h3 class='font-medium grow'>
-    <a href={localizePath(`/${post.id}/`, lang)}>
+    <a href={localizePath(`/${post.id}/`, lang)}
+      class='no-underline decoration-[var(--accent)] decoration-2 underline-offset-4 hover:underline'>
       {post.data.title}
     </a>
   </h3>
-  <div class='flex gap-2 shrink-0'>
+  <div class='flex flex-wrap gap-2 shrink-0'>
     {
       (post.data.tags || [] )?.map((tag: string) => (
         <a
           class='border border-zinc-300 dark:border-zinc-700 rounded-2xl
           text-sm text-zinc-700 dark:text-zinc-300 no-underline px-2 py-0.5
-          transition-all duration-700
+          transition-colors duration-200
           hover:border-zinc-700 dark:hover:border-zinc-300'
           href={localizePath(`/tags/${slugify(tag)}/`, lang)}>
           {translateTag(tag, lang)}

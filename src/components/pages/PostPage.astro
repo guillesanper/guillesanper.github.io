@@ -6,13 +6,9 @@ import FormattedDate from '@src/components/FormattedDate.astro';
 import AboutTheAuthor from '@src/components/widgets/AboutTheAuthor.astro';
 import TableOfContent from '@src/components/widgets/TableOfContent.astro';
 import { slugify } from '@src/utils';
-import { loadEnv } from 'vite';
 import { render } from 'astro:content';
 import { getLangFromUrl, useTranslations, localizePath, translateTag } from '@src/i18n/utils';
-import { langLocale } from '@src/i18n/ui';
 import type { ResolvedPost } from '@src/i18n/posts';
-
-const { GISCUS_REPO, GISCUS_REPO_ID, GISCUS_CATEGORY, GISCUS_CATEGORY_ID } = loadEnv(process.env.NODE_ENV || 'production', process.cwd(), '');
 
 interface Props {
 	post: ResolvedPost;
@@ -81,27 +77,6 @@ const { Content, headings } = await render(post.entry);
           </div>
 					<Content />
 				</Prose>
-        {
-          GISCUS_REPO &&
-            <script
-              id='giscus-script'
-              is:inline
-              src='https://giscus.app/client.js'
-              data-repo={GISCUS_REPO}
-              data-repo-id={GISCUS_REPO_ID}
-              data-category={GISCUS_CATEGORY}
-              data-category-id={GISCUS_CATEGORY_ID}
-              data-mapping='pathname'
-              data-strict='0'
-              data-reactions-enabled='1'
-              data-emit-metadata='0'
-              data-input-position='bottom'
-              data-theme='preferred_color_scheme'
-              data-lang={langLocale[lang]}
-              crossorigin='anonymous'
-              async></script>
-        }
-
 			</article>
 		</main>
     <div class='shrink-0 w-[280px] hidden lg:block'>

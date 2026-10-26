@@ -66,10 +66,8 @@ time, so the names must match exactly — there is no `PUBLIC_` prefix.
 | Variable | Enables |
 | :--- | :--- |
 | `GTAG_MEASUREMENT_ID` | Google Analytics |
-| `GISCUS_REPO`, `GISCUS_REPO_ID`, `GISCUS_CATEGORY`, `GISCUS_CATEGORY_ID` | [giscus](https://giscus.app) comments on blog posts |
-| `GITHUB_PERSONAL_ACCESS_TOKEN` | Pulling live repo stats into the projects page (opt-in, currently disabled) |
 
-In CI they are supplied as GitHub Actions secrets; see the `env:` block in
+In CI it is supplied as a GitHub Actions secret; see the `env:` block in
 [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml).
 
 ## Deployment
@@ -78,13 +76,6 @@ Every push to `main` triggers [`.github/workflows/deploy.yml`](.github/workflows
 which builds the site on a runner and publishes `dist/` to GitHub Pages. The build output is
 never committed — Pages is configured with **GitHub Actions** as its source, so the artifact
 is served as-is and Astro's `_astro/` directory is not filtered by Jekyll.
-
-## Credits
-
-Based on [Devolio](https://github.com/devaradise/devolio), an Astro portfolio and blog
-template by [Devaradise](https://devaradise.com), used under the MIT licence. The template has
-since been substantially modified: bilingual routing, a reworked content model and this
-project's own design and writing.
 
 ## Licence
 

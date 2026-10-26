@@ -85,6 +85,13 @@ const Icon = icon ?? tech.icon;
     border-radius: 9999px;
     padding: 1px;
     vertical-align: middle;
+    /* Borde estático en reposo; el giro solo se activa al pasar por la tarjeta. */
+    background-color: color-mix(in srgb, var(--pill-c) 35%, transparent);
+    transition: background-color 200ms ease;
+  }
+
+  :global(.project-card:hover) .tech-pill {
+    background-color: transparent;
   }
 
   :global(.dark) .tech-pill {
@@ -94,13 +101,19 @@ const Icon = icon ?? tech.icon;
   .tech-pill__glow {
     position: absolute;
     inset: -1000%;
-    animation: tech-pill-spin 2s linear infinite;
+    opacity: 0;
+    transition: opacity 200ms ease;
     background: conic-gradient(
       from 90deg at 50% 50%,
       color-mix(in srgb, var(--pill-c) 0%, transparent) 0%,
       var(--pill-c) 50%,
       color-mix(in srgb, var(--pill-c) 0%, transparent) 100%
     );
+  }
+
+  :global(.project-card:hover) .tech-pill__glow {
+    opacity: 1;
+    animation: tech-pill-spin 2s linear infinite;
   }
 
   .tech-pill__body {
@@ -137,7 +150,7 @@ const Icon = icon ?? tech.icon;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .tech-pill__glow {
+    :global(.project-card:hover) .tech-pill__glow {
       animation: none;
       background: var(--pill-c);
       opacity: 0.6;

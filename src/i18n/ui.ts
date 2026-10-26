@@ -50,9 +50,9 @@ export const ui = {
 		'header.theme': 'Theme mode',
 		'header.language': 'Change language',
 
-		'footer.newsletter': 'Newsletter',
-		'footer.coffee': 'Buy me a Coffee',
+		'footer.contact': 'Contact',
 		'footer.rss': 'RSS',
+		'footer.github': 'GitHub',
 
 		'home.intro1':
 			"Final-year Software Engineering student in Madrid. I build ML systems, infrastructure tooling, and applications where the security model is decided before the first line of code - not added afterwards.",
@@ -61,8 +61,11 @@ export const ui = {
 		'home.moreAboutMe': 'More about me',
 		'home.recentPosts': 'Recent Posts',
 		'home.myProjects': 'My Projects',
-		'home.allPosts': 'All posts »',
-		'home.allProjects': 'All projects »',
+		'home.allPosts': 'All posts',
+		'home.allProjects': 'All projects',
+		'home.ctaEmail': 'Email me',
+		'home.ctaGithub': 'GitHub',
+		'home.ctaCv': 'Download CV',
 
 		'about.seoTitle': 'About Me',
 		'about.seoDescription':
@@ -88,14 +91,17 @@ export const ui = {
 		'posts.title': 'All posts',
 		'posts.description':
 			'Write-ups on the systems I build: machine learning pipelines, applied cryptography, and infrastructure.',
+		'posts.searchLabel': 'Search posts',
+		'posts.searchPlaceholder': 'Search by title, description or tag…',
+		'posts.searchClear': 'Clear search',
+		'posts.showingCount': 'Showing {count} of {total} posts',
+		'posts.noResults': 'No posts match “{query}”.',
 
 		'projects.title': 'Projects',
 		'projects.description':
 			'Things I have built end to end. Each one has a write-up on the decisions behind it.',
 		'projects.article': 'Article',
 		'projects.demo': 'Demo',
-		'projects.stars': 'stars',
-		'projects.githubStars': 'Github stars',
 
 		'tags.title': 'All Tags',
 		'tags.description':
@@ -109,6 +115,8 @@ export const ui = {
 		'post.updatedOn': 'Updated on',
 		'post.publishedOn': 'Published on',
 		'post.onlyInEnglish': 'This post is only available in English.',
+		'post.readingTime': '{minutes} min read',
+		'post.featured': 'Latest',
 
 		'toc.onThisPage': 'On This Page',
 
@@ -141,9 +149,9 @@ export const ui = {
 		'header.theme': 'Modo de color',
 		'header.language': 'Cambiar de idioma',
 
-		'footer.newsletter': 'Newsletter',
-		'footer.coffee': 'Invítame a un café',
+		'footer.contact': 'Contacto',
 		'footer.rss': 'RSS',
+		'footer.github': 'GitHub',
 
 		'home.intro1':
 			'Estudiante de último año de Ingeniería del Software en Madrid. Construyo sistemas de ML, herramientas de infraestructura y aplicaciones donde el modelo de seguridad se decide antes de la primera línea de código, no se añade después.',
@@ -152,8 +160,11 @@ export const ui = {
 		'home.moreAboutMe': 'Más sobre mí',
 		'home.recentPosts': 'Artículos recientes',
 		'home.myProjects': 'Mis proyectos',
-		'home.allPosts': 'Todos los artículos »',
-		'home.allProjects': 'Todos los proyectos »',
+		'home.allPosts': 'Todos los artículos',
+		'home.allProjects': 'Todos los proyectos',
+		'home.ctaEmail': 'Escríbeme',
+		'home.ctaGithub': 'GitHub',
+		'home.ctaCv': 'Descargar CV',
 
 		'about.seoTitle': 'Sobre mí',
 		'about.seoDescription':
@@ -179,14 +190,17 @@ export const ui = {
 		'posts.title': 'Todos los artículos',
 		'posts.description':
 			'Artículos sobre los sistemas que construyo: pipelines de machine learning, criptografía aplicada e infraestructura.',
+		'posts.searchLabel': 'Buscar artículos',
+		'posts.searchPlaceholder': 'Busca por título, descripción o etiqueta…',
+		'posts.searchClear': 'Borrar búsqueda',
+		'posts.showingCount': 'Mostrando {count} de {total} artículos',
+		'posts.noResults': 'Ningún artículo coincide con «{query}».',
 
 		'projects.title': 'Proyectos',
 		'projects.description':
 			'Cosas que he construido de principio a fin. Cada una tiene un artículo con las decisiones que hay detrás.',
 		'projects.article': 'Artículo',
 		'projects.demo': 'Demo',
-		'projects.stars': 'estrellas',
-		'projects.githubStars': 'Estrellas en Github',
 
 		'tags.title': 'Todas las etiquetas',
 		'tags.description':
@@ -198,6 +212,8 @@ export const ui = {
 		'post.updatedOn': 'Actualizado el',
 		'post.publishedOn': 'Publicado el',
 		'post.onlyInEnglish': 'Este artículo solo está disponible en inglés.',
+		'post.readingTime': '{minutes} min de lectura',
+		'post.featured': 'Lo último',
 
 		'toc.onThisPage': 'En esta página',
 

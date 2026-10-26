@@ -1,7 +1,3 @@
-import { loadEnv } from 'vite';
-
-const { GITHUB_PERSONAL_ACCESS_TOKEN } = loadEnv(process.env.NODE_ENV || 'production', process.cwd(), '');
-
 export const slugify = (input: string) => {
 	if (!input) return '';
 
@@ -23,18 +19,20 @@ export const slugify = (input: string) => {
 export const unslugify = (slug: string) =>
 	slug.replace(/\-/g, ' ').replace(/\w\S*/g, (text) => text.charAt(0).toUpperCase() + text.slice(1).toLowerCase());
 
-export const kFormatter = (num: number) => {
-	return Math.abs(num) > 999 ? (Math.sign(num) * (Math.abs(num) / 1000)).toFixed(1) + 'k' : Math.sign(num) * Math.abs(num);
-};
+const WORDS_PER_MINUTE = 200;
 
-export const getRepositoryDetails = async (repositoryFullname: string) => {
-	const repoDetails = await fetch('https://api.github.com/repos/' + repositoryFullname, {
-		method: 'GET',
-		headers: {
-			Authorization: `Bearer ${GITHUB_PERSONAL_ACCESS_TOKEN}`,
-			'X-GitHub-Api-Version': '2022-11-28'
-		}
-	});
-	const response = await repoDetails.json();
-	return response;
+/**
+ * Estimated reading time, in minutes, from a post's raw markdown. The glob
+ * loader exposes it as `entry.body`, so this costs nothing at runtime: the
+ * listing is static and the number is baked in at build time.
+ */
+export const readingTime = (body = '') => {
+	const prose = body
+		// Code blocks aren't read word by word, and counting them would inflate
+		// every post on this blog well past what it takes to read one.
+		.replace(/```[\s\S]*?```/g, ' ')
+		.replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
+		.replace(/<[^>]+>/g, ' ');
+	const words = prose.split(/\s+/).filter(Boolean).length;
+	return Math.max(1, Math.round(words / WORDS_PER_MINUTE));
 };

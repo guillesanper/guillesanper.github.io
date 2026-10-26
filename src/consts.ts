@@ -7,9 +7,11 @@ export const SITE_TITLE = 'Guillermo Sanchez';
 // `site.description` in src/i18n/ui.ts.
 
 export const AUTHOR_NAME = 'Guillermo Sanchez';
-export const AUTHOR_ROLE = 'Software Engineer - Platform & ML';
+export const AUTHOR_ROLE = 'Software Engineer · Platform & ML';
 
 export const GITHUB_USER = 'guillesanper';
 export const GITHUB_URL = `https://github.com/${GITHUB_USER}`;
 export const LINKEDIN_URL = ''; // optional
 export const CONTACT_EMAIL = 'guilsa06@ucm.es';
+// Served from public/. The home page hides the link while the file is missing.
+export const CV_PATH = '/cv.pdf';
