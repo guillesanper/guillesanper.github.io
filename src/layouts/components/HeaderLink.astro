@@ -38,11 +38,19 @@ const isActive = target === pathname || target === '/' + subpath?.[0];
 		display: flex;
 		align-items: center;
 		height: 2.25rem;
-		padding-inline: 0.875rem;
+		/* Narrower on phones so the Spanish labels fit on one line at 390px. */
+		padding-inline: 0.55rem;
+		white-space: nowrap;
 		border-radius: 9999px;
 		transition:
 			color 200ms ease,
 			background-color 200ms ease;
+	}
+
+	@media (min-width: 640px) {
+		.nav-link {
+			padding-inline: 0.875rem;
+		}
 	}
 
 	/* The hover tint is currentColor at a low opacity, so it darkens in light mode
