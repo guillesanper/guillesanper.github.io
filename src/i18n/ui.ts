@@ -52,6 +52,7 @@ export const ui = {
 
 		'footer.contact': 'Contact',
 		'footer.rss': 'RSS',
+		'footer.github': 'GitHub',
 
 		'home.intro1':
 			"Final-year Software Engineering student in Madrid. I build ML systems, infrastructure tooling, and applications where the security model is decided before the first line of code - not added afterwards.",
@@ -60,8 +61,11 @@ export const ui = {
 		'home.moreAboutMe': 'More about me',
 		'home.recentPosts': 'Recent Posts',
 		'home.myProjects': 'My Projects',
-		'home.allPosts': 'All posts »',
-		'home.allProjects': 'All projects »',
+		'home.allPosts': 'All posts',
+		'home.allProjects': 'All projects',
+		'home.ctaEmail': 'Email me',
+		'home.ctaGithub': 'GitHub',
+		'home.ctaCv': 'Download CV',
 
 		'about.seoTitle': 'About Me',
 		'about.seoDescription':
@@ -147,6 +151,7 @@ export const ui = {
 
 		'footer.contact': 'Contacto',
 		'footer.rss': 'RSS',
+		'footer.github': 'GitHub',
 
 		'home.intro1':
 			'Estudiante de último año de Ingeniería del Software en Madrid. Construyo sistemas de ML, herramientas de infraestructura y aplicaciones donde el modelo de seguridad se decide antes de la primera línea de código, no se añade después.',
@@ -155,8 +160,11 @@ export const ui = {
 		'home.moreAboutMe': 'Más sobre mí',
 		'home.recentPosts': 'Artículos recientes',
 		'home.myProjects': 'Mis proyectos',
-		'home.allPosts': 'Todos los artículos »',
-		'home.allProjects': 'Todos los proyectos »',
+		'home.allPosts': 'Todos los artículos',
+		'home.allProjects': 'Todos los proyectos',
+		'home.ctaEmail': 'Escríbeme',
+		'home.ctaGithub': 'GitHub',
+		'home.ctaCv': 'Descargar CV',
 
 		'about.seoTitle': 'Sobre mí',
 		'about.seoDescription':
