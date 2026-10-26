@@ -100,6 +100,13 @@ const isActive = target === pathname || target === '/' + subpath?.[0];
 		opacity: 0.75;
 	}
 
+	/* Five pills at full padding overflow the narrowest phones (320px). */
+	@media (max-width: 400px) {
+		.nav-link {
+			padding-inline: 0.5rem;
+		}
+	}
+
 	.nav-link:focus-visible {
 		outline: none;
 		box-shadow: 0 0 0 2px rgb(161 161 170 / 0.9);

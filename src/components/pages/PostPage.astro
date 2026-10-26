@@ -40,7 +40,7 @@ const { Content, headings } = await render(post.entry);
 						<h1 class='!my-1 leading-tight'>{title}</h1>
             <div class='text-sm font-[500] mt-2 sm:mt-0 py-1 md:text-right flex flex-col sm:flex-row gap-3 sm:justify-between sm:items-center'>
               {
-                <div class='flex gap-2'>
+                <div class='flex flex-wrap gap-2'>
                   {
                     (tags || [] )?.map((tag: string) => (
                       <a
@@ -79,7 +79,7 @@ const { Content, headings } = await render(post.entry);
 				</Prose>
 			</article>
 		</main>
-    <div class='shrink-0 w-[280px] hidden md:block'>
+    <div class='shrink-0 w-[280px] hidden lg:block'>
       <div class='mb-4'>
 				<AboutTheAuthor />
 			</div>

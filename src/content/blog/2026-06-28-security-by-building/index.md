@@ -3,6 +3,7 @@ title: 'I Have No Security Coursework. I Kept Building Security Anyway.'
 description: 'On learning cryptography and threat modelling as a consequence of building systems, and why I am aiming at platform work rather than security work.'
 tags: ["Security", "Career", "Engineering"]
 pubDate: '2026-06-28'
+updatedDate: '2026-10-18'
 coverImage: './cover.jpg'
 ---
 
@@ -36,7 +37,7 @@ That gap is real and it shapes what I'm looking for.
 
 Security roles mostly split into two shapes. One is adversarial — find the flaw, run the campaign, respond to the incident. The other is constructive — build systems where the insecure path is difficult and the secure one is the default.
 
-I'm useful at the second and I'd be mediocre at the first. What I like is the design work: the point where you decide the backend cannot decrypt the credentials it stores, or that the tool never issues a query against user data. Those decisions get made while the system is being built, by whoever is building it, and they close off whole classes of problem before anyone has to detect anything.
+I'm useful at the second and I'd be mediocre at the first. What I like is the design work: the point where you decide the server cannot decrypt the vaults it stores, or that building a schema map never reads a single row of user data. Those decisions get made while the system is being built, by whoever is building it, and they close off whole classes of problem before anyone has to detect anything.
 
 Which is why I'm aiming at Platform Engineering, Cloud Engineering, and DevSecOps rather than a security analyst track. I want to be on the side that builds the paved road — the pipeline where secrets aren't in the repo because there's a better path that's also the easier one, the infrastructure where least privilege is the default because someone made it the default.
 

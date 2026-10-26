@@ -9,7 +9,6 @@ export const SITE_TITLE = 'Guillermo Sanchez';
 export const AUTHOR_NAME = 'Guillermo Sanchez';
 export const AUTHOR_ROLE = 'Software Engineer · Platform & ML';
 
-// TODO: replace with your real GitHub username. Used for every profile and repo link on the site.
 export const GITHUB_USER = 'guillesanper';
 export const GITHUB_URL = `https://github.com/${GITHUB_USER}`;
 export const LINKEDIN_URL = ''; // optional

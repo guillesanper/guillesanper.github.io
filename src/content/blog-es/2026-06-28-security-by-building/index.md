@@ -3,6 +3,7 @@ title: 'No he cursado ninguna asignatura de seguridad. Aun así, no he parado de
 description: 'Sobre aprender criptografía y modelado de amenazas como consecuencia de construir sistemas, y por qué apunto a trabajo de plataforma y no a trabajo de seguridad.'
 tags: ["Security", "Career", "Engineering"]
 pubDate: '2026-06-28'
+updatedDate: '2026-10-18'
 coverImage: './cover.jpg'
 ---
 
@@ -36,7 +37,7 @@ Esa carencia es real y condiciona lo que estoy buscando.
 
 Los puestos de seguridad se dividen sobre todo en dos formas. Una es adversaria — encontrar el fallo, ejecutar la campaña, responder al incidente. La otra es constructiva — construir sistemas en los que el camino inseguro sea difícil y el seguro sea el que viene por defecto.
 
-Soy útil en la segunda y sería mediocre en la primera. Lo que me gusta es el trabajo de diseño: el punto en el que decides que el backend no pueda descifrar las credenciales que almacena, o que la herramienta nunca lance una consulta contra datos de usuario. Esas decisiones se toman mientras se construye el sistema, las toma quien lo está construyendo, y cierran clases enteras de problemas antes de que nadie tenga que detectar nada.
+Soy útil en la segunda y sería mediocre en la primera. Lo que me gusta es el trabajo de diseño: el punto en el que decides que el servidor no pueda descifrar las bóvedas que almacena, o que construir el mapa de un esquema nunca lea una sola fila de datos de usuario. Esas decisiones se toman mientras se construye el sistema, las toma quien lo está construyendo, y cierran clases enteras de problemas antes de que nadie tenga que detectar nada.
 
 Que es por lo que apunto a Platform Engineering, Cloud Engineering y DevSecOps antes que a una trayectoria de analista de seguridad. Quiero estar en el lado que construye el camino asfaltado — el pipeline donde los secretos no están en el repositorio porque hay una vía mejor que además es la más fácil, la infraestructura donde el mínimo privilegio es el valor por defecto porque alguien lo puso así.
 

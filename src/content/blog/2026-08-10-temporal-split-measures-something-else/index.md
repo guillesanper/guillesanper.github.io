@@ -3,8 +3,13 @@ title: 'Your temporal split is probably measuring something else'
 description: 'Changing a single grouping key moved an intrusion detector from 0.2809 to 0.7721 F1-macro, without touching the chronological guarantee or the model. An anatomy of a published result that was wrong by a factor of ~4.'
 tags: ["Machine Learning", "Security", "Python"]
 pubDate: '2026-08-10'
+updatedDate: '2026-10-18'
 coverImage: './cover.jpg'
 ---
+
+> **Update, October 2026: the decomposition in this post doesn't survive a re-measurement.** `order_idx` was derived from the alphabetical order of the CSV files, not from real capture time. With capture order fixed and the code otherwise unchanged, the three protocols measure `random` 0.9453 → `sub-label` 0.6467 → `class` 0.6547. The taxonomy artefact that this post blames for 76% of the drop is no longer measurable (−0.008). Its only path was Stage 1's shared threshold, and with the corrected order both protocols land on almost the same threshold. A control experiment, current code with alphabetical order restored, reproduces the August figures exactly, so the change has a single cause.
+>
+> What still stands: the dataset facts (under `class`, Tuesday's test block is 100% SSH-Patator and 35% of Wednesday's is GoldenEye and Heartbleed), the way coupling through Stage 1 spreads one change across every class, the case for keeping the raw label as provenance, and the Botnet verdict, which got harsher. With 12.6× more training rows and Stage 1 passing every Botnet test flow, Stage 2 still scores 0.00 under the temporal split. The re-measurement is documented in the [repository](https://github.com/guillesanper/sentinel-platform/blob/temporal-fix/docs/ml/README.md). I'm leaving the post as published, because the method holds even where the numbers didn't.
 
 A chronological cut is not leakage-proof because it is chronological. It is leakage-proof with
 respect to the **unit** it cuts over. If that unit aggregates processes that ran in series, the cut
@@ -21,7 +26,7 @@ know that it was wrong.
 
 Sentinel has two parallel tracks: log events (an ensemble of three detectors, 25 features) and
 network flows (an Isolation Forest → XGBoost cascade, 78 CICFlowMeter features). The flow track was
-integrated from earlier work on CICIDS2017 that reported 0.9516 F1-macro and that admitted, in its
+integrated from [my own earlier work](/2025-11-10-intrusion-detection-cascade/) on CICIDS2017 that reported 0.9516 F1-macro and that admitted, in its
 own §10.1, a methodological flaw: a stratified random per-row split over a continuous capture.
 CICIDS2017 is real traffic captured over five days; the flows of a single attack burst — same host,
 same scenario, milliseconds apart — are near-identical. A random split spreads them across train and
@@ -82,7 +87,7 @@ and the reading that got published was:
 > The drop from 0.9166 to 0.2809 in F1-macro is not a regression: it is the magnitude of the leak.
 
 It's a sentence shaped like a conclusion: it quantifies exactly what the earlier work admitted it
-had not controlled for. It was the most cited result of the branch for weeks.
+had not controlled for. It stood as the branch's headline result until the review below.
 
 It is wrong by a factor of ~4.
 
@@ -118,7 +123,7 @@ In the first three rows the test set is not measuring the same thing as the trai
   a train set of 6,405.
 
 That is not a leakage-proof split. It is an unseen-attack-tool holdout, dressed up as a
-leakage-proof split. It is a legitimate and hard question — probably harder than the one we meant to
+leakage-proof split. It is a legitimate and hard question — probably harder than the one I meant to
 answer — but it is **a different question**, and nobody had chosen it.
 
 ## The experiment that isolates the factor
@@ -175,7 +180,7 @@ would drop too. It doesn't.
 
 ## The artefact doesn't stay where it should
 
-This is the finding we didn't expect, and the one that most justifies changing the default.
+This is the finding I didn't expect, and the one that most justifies changing the default.
 
 `Scan` and `DDoS` have **a single tool** each. Their block is split **identically, bit for bit**,
 under both protocols: `(friday, Scan)` and `(friday, PortScan)` are the same set of rows in the same
