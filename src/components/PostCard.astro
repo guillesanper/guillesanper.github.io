@@ -36,7 +36,7 @@ const searchText = [title, description, ...(tags || []).map((tag: string) => tra
 	data-post
 	data-search={searchText}
 	class:list={[
-		`group relative overflow-hidden rounded-xl border shadow-sm dark:border-zinc-700
+		`group relative overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-700
 		 transition-colors duration-300 hover:border-zinc-400 dark:hover:border-zinc-500`,
 		featured ? 'md:grid md:grid-cols-2 md:items-stretch' : 'flex flex-col',
 		className
@@ -92,7 +92,7 @@ const searchText = [title, description, ...(tags || []).map((tag: string) => tra
 		<h2 class:list={['mt-2 font-bold leading-snug', featured ? 'text-2xl md:text-3xl' : 'text-lg']}>
 			{/* `after:inset-0` makes the whole card clickable without nesting the tag
 			    links inside an <a>, which would be invalid and unreachable by keyboard. */}
-			<a href={href} class='no-underline after:absolute after:inset-0 group-hover:underline decoration-2 underline-offset-4'>
+			<a href={href} class='no-underline after:absolute after:inset-0 group-hover:underline decoration-[var(--accent)] decoration-2 underline-offset-4'>
 				{title}
 			</a>
 		</h2>
@@ -114,7 +114,7 @@ const searchText = [title, description, ...(tags || []).map((tag: string) => tra
 						<a
 							class='border border-zinc-300 dark:border-zinc-700 rounded-2xl
 							text-sm text-zinc-700 dark:text-zinc-300 no-underline px-2 py-0.5
-							transition-all duration-700
+							transition-colors duration-200
 							hover:border-zinc-700 dark:hover:border-zinc-300'
 							href={localizePath(`/tags/${slugify(tag)}/`, lang)}
 						>
