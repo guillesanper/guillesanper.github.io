@@ -1,3 +1,5 @@
+import defaultTheme from 'tailwindcss/defaultTheme';
+
 /** @type {import('tailwindcss').Config} */
 export default {
   darkMode: 'selector',
@@ -11,6 +13,9 @@ export default {
 			}
 		},
 		extend: {
+      fontFamily: {
+        sans: ['"IBM Plex Sans"', ...defaultTheme.fontFamily.sans]
+      },
       typography: {
         DEFAULT: {
           css: {
