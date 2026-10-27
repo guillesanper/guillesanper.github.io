@@ -97,6 +97,19 @@ export const projects: Project[] = [
           'TFG en curso: ¿producen las diferencias entre representaciones de audio (MFCC, MERT) grafos de similitud entre canciones significativamente distintos? Evaluación con bootstrap pareado frente a un baseline aleatorio, sobre un problema sin verdad de referencia.'
       }
     }
+  },
+  {
+    name: 'BibliotecaUCM',
+    description:
+      'Small server-rendered Express app for managing a university library\'s staff: listing with filters by shift, ID and name, create and edit forms validated with express-validator, photo uploads with Multer, soft deletes, and an accessibility page whose text size and colours persist in cookies.',
+    demoLink: `${GITHUB_URL}/BibliotecaUCM`,
+    tags: ['Node.js', 'Express', 'EJS', 'Bootstrap'],
+    i18n: {
+      es: {
+        description:
+          'Pequeña aplicación Express renderizada en servidor para gestionar el personal de una biblioteca universitaria: listado con filtros por turno, identificador y nombre, formularios de alta y edición validados con express-validator, subida de fotos con Multer, borrado lógico y una página de accesibilidad cuyo tamaño de texto y colores se guardan en cookies.'
+      }
+    }
   }
 ]
 
