@@ -72,21 +72,6 @@ export const projects: Project[] = [
     }
   },
   {
-    name: 'Network Intrusion Detection Cascade',
-    description:
-      'Two-stage detector over CICIDS2017: an Isolation Forest tuned for recall filters benign traffic before XGBoost, or a neural network written from scratch in NumPy, names the attack. 0.95 F1-macro under a random split, which later work showed to be optimistic.',
-    demoLink: `${GITHUB_URL}/Proyecto-Aprendizaje-Automatico`,
-    postLink: '/2025-11-10-intrusion-detection-cascade/',
-    tags: ['Python', 'XGBoost', 'NumPy'],
-    i18n: {
-      es: {
-        name: 'Cascada de detección de intrusiones en red',
-        description:
-          'Detector en dos etapas sobre CICIDS2017: un Isolation Forest ajustado por recall filtra el tráfico benigno antes de que XGBoost, o una red neuronal escrita desde cero en NumPy, nombre el ataque. F1-macro de 0,95 con un split aleatorio, que el trabajo posterior demostró optimista.'
-      }
-    }
-  },
-  {
     name: 'FlappyBirdNEAT',
     description:
       'Neuroevolution lab in Java with no ML libraries: a fixed-topology genetic algorithm and full NEAT, compared across 30 paired seeds with corrected statistics. NEAT solves 26/30 runs against 20/30 for the best GA, and training gives bit-identical results on 1 or 8 threads.',
