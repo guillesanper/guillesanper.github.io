@@ -1,0 +1,239 @@
+---
+import { CONTACT_EMAIL, LINKEDIN_URL } from '@src/consts';
+import { getLangFromUrl, useTranslations } from '@src/i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+const item = `flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm text-zinc-700 no-underline
+	transition-colors duration-150 cursor-pointer
+	hover:bg-zinc-100 hover:text-zinc-950 focus:bg-zinc-100 focus:text-zinc-950 focus:outline-none
+	dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-50 dark:focus:bg-zinc-800 dark:focus:text-zinc-50`;
+---
+
+{/* Same build as the language switcher (LanguageSelect.astro): a button and a
+	panel of our own, rendered open so every option still works without
+	JavaScript, and closed by the inline script before the first paint. */}
+<div id='contactMenu' class='relative' data-open>
+	<button
+		type='button'
+		id='contactMenuButton'
+		aria-haspopup='menu'
+		aria-expanded='true'
+		aria-controls='contactMenuPanel'
+		class='inline-flex items-center gap-2 rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white
+			transition-colors duration-200 hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white
+			focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2
+			dark:focus-visible:ring-offset-zinc-900'
+	>
+		<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><rect width='20' height='16' x='2' y='4' rx='2'/><path d='m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7'/></svg>
+		{t('home.ctaContact')}
+		<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' class='contact-chevron -mr-1 opacity-70' aria-hidden='true'><path d='m6 9 6 6 6-6'/></svg>
+	</button>
+
+	<div
+		id='contactMenuPanel'
+		role='menu'
+		aria-label={t('contact.menu')}
+		class='contact-panel absolute left-0 top-full z-50 mt-2 flex min-w-[15rem] flex-col rounded-xl border border-zinc-200 bg-white p-1
+			shadow-[0_8px_30px_-12px_rgb(0_0_0/0.25)] dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-[0_8px_30px_-10px_rgb(0_0_0/0.6)]'
+	>
+		<p class='m-0 truncate px-2.5 pb-1.5 pt-2 text-xs text-zinc-500 dark:text-zinc-400'>{CONTACT_EMAIL}</p>
+
+		{/* Hidden until the script confirms the clipboard is there to write to. */}
+		<button type='button' role='menuitem' id='contactCopy' data-email={CONTACT_EMAIL} class={item} hidden>
+			<span class='contact-icon copy-icon'><svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><rect width='14' height='14' x='8' y='8' rx='2'/><path d='M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2'/></svg></span>
+			<span class='contact-icon check-icon' hidden><svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M20 6 9 17l-5-5'/></svg></span>
+			<span class='copy-label'>{t('contact.copy')}</span>
+			<span class='copied-label' hidden>{t('contact.copied')}</span>
+		</button>
+		<span id='contactStatus' class='sr-only' aria-live='polite'></span>
+
+		<a href={`mailto:${CONTACT_EMAIL}`} role='menuitem' class={item}>
+			<span class='contact-icon'><svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z'/><path d='m21.854 2.147-10.94 10.939'/></svg></span>
+			{t('contact.compose')}
+		</a>
+
+		{
+			LINKEDIN_URL && (
+				<>
+					<div role='separator' class='-mx-1 my-1 h-px bg-zinc-200 dark:bg-zinc-800' />
+					<a href={LINKEDIN_URL} target='_blank' rel='noopener noreferrer' role='menuitem' class={item}>
+						<span class='contact-icon'><svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='currentColor' aria-hidden='true'><path d='M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.34V9h3.42v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28ZM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13ZM7.12 20.45H3.56V9h3.56v11.45ZM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0Z'/></svg></span>
+						<span class='flex-1'>{t('contact.linkedin')}</span>
+						<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='opacity-50' aria-hidden='true'><path d='M7 7h10v10'/><path d='M7 17 17 7'/></svg>
+					</a>
+				</>
+			)
+		}
+	</div>
+</div>
+
+<style>
+	/* Open/closed is one attribute the script flips, as in the language switcher. */
+	.contact-panel {
+		opacity: 0;
+		visibility: hidden;
+		transform: translateY(-0.25rem) scale(0.96);
+		transform-origin: top left;
+		transition:
+			opacity 150ms ease,
+			transform 150ms cubic-bezier(0.16, 1, 0.3, 1),
+			visibility 150ms;
+	}
+
+	#contactMenu[data-open] .contact-panel {
+		opacity: 1;
+		visibility: visible;
+		transform: translateY(0) scale(1);
+	}
+
+	.contact-chevron {
+		transition: transform 150ms ease;
+	}
+
+	#contactMenu[data-open] .contact-chevron {
+		transform: rotate(180deg);
+	}
+
+	/* The icons sit in plain spans so the [hidden] attribute is not overridden
+	   by a display utility. */
+	.contact-icon {
+		display: inline-flex;
+		flex: none;
+		opacity: 0.8;
+	}
+	.contact-icon[hidden],
+	#contactCopy[hidden] {
+		display: none;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.contact-panel,
+		.contact-chevron {
+			transition: none;
+		}
+	}
+</style>
+
+<script is:inline>
+	(() => {
+		const root = document.getElementById('contactMenu');
+		if (!root) return;
+		const button = document.getElementById('contactMenuButton');
+		const menu = document.getElementById('contactMenuPanel');
+		const copy = document.getElementById('contactCopy');
+
+		// mailto only works when the visitor has a mail app set up, so the
+		// address can also be copied - but only where the clipboard exists.
+		if (copy && navigator.clipboard) copy.hidden = false;
+
+		const items = Array.from(menu.querySelectorAll('[role="menuitem"]')).filter((item) => !item.hidden);
+
+		root.removeAttribute('data-open');
+		button.setAttribute('aria-expanded', 'false');
+		// Roving focus: Tab steps past the whole menu, arrows move inside it.
+		items.forEach((item) => item.setAttribute('tabindex', '-1'));
+
+		const isOpen = () => root.hasAttribute('data-open');
+
+		const open = (focusIndex) => {
+			root.setAttribute('data-open', '');
+			button.setAttribute('aria-expanded', 'true');
+			if (typeof focusIndex === 'number') items[focusIndex]?.focus();
+		};
+
+		const close = (returnFocus) => {
+			root.removeAttribute('data-open');
+			button.setAttribute('aria-expanded', 'false');
+			if (returnFocus) button.focus();
+		};
+
+		const move = (delta) => {
+			const current = items.indexOf(document.activeElement);
+			items[(current + delta + items.length) % items.length]?.focus();
+		};
+
+		button.addEventListener('click', () => (isOpen() ? close(false) : open()));
+
+		button.addEventListener('keydown', (event) => {
+			if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+			event.preventDefault();
+			open(event.key === 'ArrowDown' ? 0 : items.length - 1);
+		});
+
+		menu.addEventListener('keydown', (event) => {
+			switch (event.key) {
+				case 'ArrowDown':
+					event.preventDefault();
+					move(1);
+					break;
+				case 'ArrowUp':
+					event.preventDefault();
+					move(-1);
+					break;
+				case 'Home':
+					event.preventDefault();
+					items[0]?.focus();
+					break;
+				case 'End':
+					event.preventDefault();
+					items[items.length - 1]?.focus();
+					break;
+			}
+		});
+
+		root.addEventListener('keydown', (event) => {
+			if (!isOpen()) return;
+			if (event.key === 'Escape') {
+				event.preventDefault();
+				close(true);
+			} else if (event.key === 'Tab') {
+				close(false);
+			}
+		});
+
+		document.addEventListener('pointerdown', (event) => {
+			if (isOpen() && !root.contains(event.target)) close(false);
+		});
+
+		// Links close the menu on their way out; the anchor does the navigating,
+		// so middle-click and open-in-new-tab keep working.
+		items.filter((item) => item !== copy).forEach((item) => item.addEventListener('click', () => close(false)));
+
+		if (!copy) return;
+		const copyIcon = copy.querySelector('.copy-icon');
+		const checkIcon = copy.querySelector('.check-icon');
+		const copyLabel = copy.querySelector('.copy-label');
+		const copiedLabel = copy.querySelector('.copied-label');
+		const status = document.getElementById('contactStatus');
+		let timer;
+
+		const reset = (showCopied) => {
+			copyIcon.hidden = showCopied;
+			copyLabel.hidden = showCopied;
+			checkIcon.hidden = !showCopied;
+			copiedLabel.hidden = !showCopied;
+		};
+
+		copy.addEventListener('click', async () => {
+			try {
+				await navigator.clipboard.writeText(copy.dataset.email ?? '');
+			} catch {
+				return;
+			}
+			reset(true);
+			status.textContent = copiedLabel.textContent;
+			clearTimeout(timer);
+			// Long enough to read the confirmation, then the menu gets out of the way
+			// and the item is back to normal for the next time it opens.
+			timer = window.setTimeout(() => {
+				close(menu.contains(document.activeElement));
+				window.setTimeout(() => {
+					reset(false);
+					status.textContent = '';
+				}, 200);
+			}, 900);
+		});
+	})();
+</script>

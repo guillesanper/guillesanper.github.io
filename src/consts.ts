@@ -11,7 +11,7 @@ export const AUTHOR_ROLE = 'Software Engineer · Platform & ML';
 
 export const GITHUB_USER = 'guillesanper';
 export const GITHUB_URL = `https://github.com/${GITHUB_USER}`;
-export const LINKEDIN_URL = ''; // optional
+export const LINKEDIN_URL = 'https://www.linkedin.com/in/guillermo-sanchez-perez-a405613a5/'; // optional
 export const CONTACT_EMAIL = 'guilsa06@ucm.es';
 // Served from public/. The home page hides the link while the file is missing.
 export const CV_PATH = '/cv.pdf';

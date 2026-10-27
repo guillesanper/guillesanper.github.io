@@ -51,7 +51,6 @@ export const ui = {
 		'header.language': 'Change language',
 
 		'footer.contact': 'Contact',
-		'footer.rss': 'RSS',
 		'footer.github': 'GitHub',
 
 		'home.intro1':
@@ -63,10 +62,12 @@ export const ui = {
 		'home.myProjects': 'My Projects',
 		'home.allPosts': 'All posts',
 		'home.allProjects': 'All projects',
-		'home.ctaEmail': 'Email me',
-		'home.copyEmail': 'Copy email address',
-		'home.copyEmailShort': 'Copy email',
-		'home.copied': 'Copied',
+		'home.ctaContact': 'Contact me',
+		'contact.menu': 'Contact options',
+		'contact.copy': 'Copy address',
+		'contact.copied': 'Copied!',
+		'contact.compose': 'Open mail app',
+		'contact.linkedin': 'LinkedIn',
 		'home.ctaGithub': 'GitHub',
 		'home.ctaCv': 'Download CV',
 
@@ -153,7 +154,6 @@ export const ui = {
 		'header.language': 'Cambiar de idioma',
 
 		'footer.contact': 'Contacto',
-		'footer.rss': 'RSS',
 		'footer.github': 'GitHub',
 
 		'home.intro1':
@@ -165,10 +165,12 @@ export const ui = {
 		'home.myProjects': 'Mis proyectos',
 		'home.allPosts': 'Todos los artículos',
 		'home.allProjects': 'Todos los proyectos',
-		'home.ctaEmail': 'Escríbeme',
-		'home.copyEmail': 'Copiar dirección de correo',
-		'home.copyEmailShort': 'Copiar correo',
-		'home.copied': 'Copiado',
+		'home.ctaContact': 'Contáctame',
+		'contact.menu': 'Opciones de contacto',
+		'contact.copy': 'Copiar dirección',
+		'contact.copied': '¡Copiado!',
+		'contact.compose': 'Abrir app de correo',
+		'contact.linkedin': 'LinkedIn',
 		'home.ctaGithub': 'GitHub',
 		'home.ctaCv': 'Descargar CV',
 
