@@ -1,9 +1,13 @@
 ---
-import { CONTACT_EMAIL, LINKEDIN_URL } from '@src/consts';
+import { CONTACT_EMAIL, LINKEDIN_URL, CV_PATHS } from '@src/consts';
+import { allLangs, languages, langLocale } from '@src/i18n/ui';
 import { getLangFromUrl, useTranslations } from '@src/i18n/utils';
 
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
+
+// The page's own language first: it is the CV most visitors here want.
+const cvLangs = [lang, ...allLangs.filter((l) => l !== lang)];
 
 const item = `flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm text-zinc-700 no-underline
 	transition-colors duration-150 cursor-pointer
@@ -13,8 +17,9 @@ const item = `flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left 
 
 {/* Same build as the language switcher (LanguageSelect.astro): a button and a
 	panel of our own, rendered open so every option still works without
-	JavaScript, and closed by the inline script before the first paint. */}
-<div id='contactMenu' class='relative' data-open>
+	JavaScript, and closed by the inline script before the first paint. The CV
+	submenu follows the same rule. */}
+<div id='contactMenu' class='relative' data-open data-cv-open>
 	<button
 		type='button'
 		id='contactMenuButton'
@@ -66,6 +71,40 @@ const item = `flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left 
 				</>
 			)
 		}
+
+		<div role='separator' class='-mx-1 my-1 h-px bg-zinc-200 dark:bg-zinc-800' />
+		<div class='relative'>
+			<button
+				type='button'
+				role='menuitem'
+				id='contactCv'
+				aria-haspopup='menu'
+				aria-expanded='true'
+				aria-controls='contactCvPanel'
+				class={item}
+			>
+				<span class='contact-icon'><svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z'/><path d='M14 2v4a2 2 0 0 0 2 2h4'/><path d='M10 9H8'/><path d='M16 13H8'/><path d='M16 17H8'/></svg></span>
+				<span class='flex-1'>{t('contact.cv')}</span>
+				<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' class='cv-chevron opacity-50' aria-hidden='true'><path d='m9 18 6-6-6-6'/></svg>
+			</button>
+
+			<div
+				id='contactCvPanel'
+				role='menu'
+				aria-label={t('contact.cvMenu')}
+				class='cv-panel flex min-w-[10rem] flex-col rounded-xl border border-zinc-200 bg-white p-1
+					shadow-[0_8px_30px_-12px_rgb(0_0_0/0.25)] dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-[0_8px_30px_-10px_rgb(0_0_0/0.6)]'
+			>
+				{
+					cvLangs.map((cvLang) => (
+						<a href={CV_PATHS[cvLang]} target='_blank' rel='noopener' hreflang={langLocale[cvLang]} role='menuitem' class={item}>
+							<span class='flex-1'>{languages[cvLang]}</span>
+							<span class='text-xs text-zinc-500 dark:text-zinc-400'>PDF</span>
+						</a>
+					))
+				}
+			</div>
+		</div>
 	</div>
 </div>
 
@@ -86,10 +125,45 @@ const item = `flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left 
 		opacity: 1;
 		visibility: visible;
 		transform: translateY(0) scale(1);
+		/* Visible at once on the way in, so opening with the arrow keys can move
+		   focus into the panel straight away. */
+		transition-property: opacity, transform;
 	}
 
 	.contact-chevron {
 		transition: transform 150ms ease;
+	}
+
+	/* CV submenu: on phones it opens inline under its item, since there is no
+	   room beside the panel; from sm up it flies out to the right. */
+	.cv-panel {
+		display: none;
+		margin: 0.125rem 0 0.25rem 1.5rem;
+	}
+
+	#contactMenu[data-cv-open] .cv-panel {
+		display: flex;
+	}
+
+	.cv-chevron {
+		transition: transform 150ms ease;
+	}
+
+	#contactMenu[data-cv-open] .cv-chevron {
+		transform: rotate(90deg);
+	}
+
+	@media (min-width: 640px) {
+		.cv-panel {
+			position: absolute;
+			left: calc(100% + 0.5rem);
+			top: -0.25rem;
+			margin: 0;
+		}
+
+		#contactMenu[data-cv-open] .cv-chevron {
+			transform: none;
+		}
 	}
 
 	#contactMenu[data-open] .contact-chevron {
@@ -110,7 +184,8 @@ const item = `flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left 
 
 	@media (prefers-reduced-motion: reduce) {
 		.contact-panel,
-		.contact-chevron {
+		.contact-chevron,
+		.cv-chevron {
 			transition: none;
 		}
 	}
@@ -123,17 +198,24 @@ const item = `flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left 
 		const button = document.getElementById('contactMenuButton');
 		const menu = document.getElementById('contactMenuPanel');
 		const copy = document.getElementById('contactCopy');
+		const cvButton = document.getElementById('contactCv');
+		const cvMenu = document.getElementById('contactCvPanel');
 
 		// mailto only works when the visitor has a mail app set up, so the
 		// address can also be copied - but only where the clipboard exists.
 		if (copy && navigator.clipboard) copy.hidden = false;
 
-		const items = Array.from(menu.querySelectorAll('[role="menuitem"]')).filter((item) => !item.hidden);
+		const allItems = Array.from(menu.querySelectorAll('[role="menuitem"]')).filter((item) => !item.hidden);
+		// The arrow keys move within one level: the main menu or the CV submenu.
+		const items = allItems.filter((item) => !cvMenu.contains(item));
+		const cvItems = allItems.filter((item) => cvMenu.contains(item));
 
 		root.removeAttribute('data-open');
+		root.removeAttribute('data-cv-open');
 		button.setAttribute('aria-expanded', 'false');
+		cvButton.setAttribute('aria-expanded', 'false');
 		// Roving focus: Tab steps past the whole menu, arrows move inside it.
-		items.forEach((item) => item.setAttribute('tabindex', '-1'));
+		allItems.forEach((item) => item.setAttribute('tabindex', '-1'));
 
 		const isOpen = () => root.hasAttribute('data-open');
 
@@ -143,15 +225,31 @@ const item = `flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left 
 			if (typeof focusIndex === 'number') items[focusIndex]?.focus();
 		};
 
+		const isCvOpen = () => root.hasAttribute('data-cv-open');
+
+		const openCv = (focusFirst) => {
+			root.setAttribute('data-cv-open', '');
+			cvButton.setAttribute('aria-expanded', 'true');
+			if (focusFirst) cvItems[0]?.focus();
+		};
+
+		const closeCv = (returnFocus) => {
+			root.removeAttribute('data-cv-open');
+			cvButton.setAttribute('aria-expanded', 'false');
+			if (returnFocus) cvButton.focus();
+		};
+
 		const close = (returnFocus) => {
 			root.removeAttribute('data-open');
 			button.setAttribute('aria-expanded', 'false');
+			closeCv(false);
 			if (returnFocus) button.focus();
 		};
 
 		const move = (delta) => {
-			const current = items.indexOf(document.activeElement);
-			items[(current + delta + items.length) % items.length]?.focus();
+			const level = cvMenu.contains(document.activeElement) ? cvItems : items;
+			const current = level.indexOf(document.activeElement);
+			level[(current + delta + level.length) % level.length]?.focus();
 		};
 
 		button.addEventListener('click', () => (isOpen() ? close(false) : open()));
@@ -162,7 +260,13 @@ const item = `flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left 
 			open(event.key === 'ArrowDown' ? 0 : items.length - 1);
 		});
 
+		// A mouse click only opens the submenu; keyboard activation (detail 0)
+		// also moves focus into it.
+		cvButton.addEventListener('click', (event) => (isCvOpen() ? closeCv(false) : openCv(event.detail === 0)));
+
 		menu.addEventListener('keydown', (event) => {
+			const inCv = cvMenu.contains(document.activeElement);
+			const level = inCv ? cvItems : items;
 			switch (event.key) {
 				case 'ArrowDown':
 					event.preventDefault();
@@ -174,11 +278,21 @@ const item = `flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left 
 					break;
 				case 'Home':
 					event.preventDefault();
-					items[0]?.focus();
+					level[0]?.focus();
 					break;
 				case 'End':
 					event.preventDefault();
-					items[items.length - 1]?.focus();
+					level[level.length - 1]?.focus();
+					break;
+				case 'ArrowRight':
+					if (document.activeElement !== cvButton) break;
+					event.preventDefault();
+					openCv(true);
+					break;
+				case 'ArrowLeft':
+					if (!inCv) break;
+					event.preventDefault();
+					closeCv(true);
 					break;
 			}
 		});
@@ -187,7 +301,9 @@ const item = `flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left 
 			if (!isOpen()) return;
 			if (event.key === 'Escape') {
 				event.preventDefault();
-				close(true);
+				// Escape backs out one level at a time.
+				if (isCvOpen() && cvMenu.contains(document.activeElement)) closeCv(true);
+				else close(true);
 			} else if (event.key === 'Tab') {
 				close(false);
 			}
@@ -199,7 +315,9 @@ const item = `flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left 
 
 		// Links close the menu on their way out; the anchor does the navigating,
 		// so middle-click and open-in-new-tab keep working.
-		items.filter((item) => item !== copy).forEach((item) => item.addEventListener('click', () => close(false)));
+		allItems
+			.filter((item) => item !== copy && item !== cvButton)
+			.forEach((item) => item.addEventListener('click', () => close(false)));
 
 		if (!copy) return;
 		const copyIcon = copy.querySelector('.copy-icon');

@@ -1,0 +1,56 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Guillermo Sanchez - CV</title><link rel="stylesheet" href="style.css"></head><body>
+<h1>GUILLERMO SANCHEZ</h1>
+<div class="contact">Madrid, España · +34 601 308 776 · <a href="mailto:guilsa06@ucm.es">guilsa06@ucm.es</a> · <a href="https://github.com/guillesanper">github.com/guillesanper</a> · <a href="https://www.linkedin.com/in/guillermo-sanchez-perez-a405613a5/">linkedin.com/in/guillermo-sanchez-perez-a405613a5</a></div>
+<div class="web"><b>Portfolio y blog técnico:</b> <a href="https://guillesanper.github.io/es/">guillesanper.github.io</a></div>
+
+<h2>Formación</h2>
+<div class="entry">
+<div class="row"><b>Universidad Complutense de Madrid</b><span class="right">Madrid, España</span></div>
+<div class="row"><i>Grado en Ingeniería del Software</i><span class="right">Sep 2022 – Fin previsto jun 2027</span></div>
+<ul>
+<li><b>TFG (en curso):</b> si distintas representaciones de audio (MFCC, MERT) producen grafos de similitud entre canciones significativamente distintos; evaluación con bootstrap pareado frente a un baseline aleatorio, en un problema sin verdad de referencia. Python, PyTorch.</li>
+<li>Optativas orientadas a aprendizaje automático, computación evolutiva, ingeniería del conocimiento y big data.</li>
+</ul></div>
+<div class="entry">
+<div class="row"><b>IES San Isidoro de Sevilla</b><span class="right"></span></div>
+<div class="row"><i>Bachillerato de Ciencias</i><span class="right">2020 – 2022</span></div>
+</div>
+
+<h2>Proyectos</h2>
+<div class="entry">
+<div class="row"><span><b>Sentinel</b> — Plataforma de detección de intrusiones</span><span class="right"><i>Python, XGBoost, Terraform, Kubernetes, GCP</i></span></div>
+<ul>
+<li>Detector en dos etapas sobre CICIDS2017: un Isolation Forest entrenado solo con tráfico benigno filtra los flujos y XGBoost clasifica los que pasan.</li>
+<li>Desplegado en GKE con módulos de Terraform (VPC, IAM, clúster), overlays de kustomize y network policies con denegación por defecto; el entrenamiento corre como Jobs de Kubernetes y la inferencia tras FastAPI.</li>
+<li>Al pasar a un split cronológico y hacer experimentos de control, detecté errores en mis propios resultados publicados (un F1-macro desviado ~4×, una métrica de umbral crítica desviada 14×) y publiqué cada corrección.</li>
+</ul></div>
+<div class="entry">
+<div class="row"><span><b>Gestor de contraseñas zero-knowledge</b> — Autoalojado</span><span class="right"><i>Django, TypeScript, PostgreSQL, Redis, MinIO, Docker</i></span></div>
+<ul>
+<li>Gestor de contraseñas y ficheros cuyo servidor no puede leer lo que almacena: la contraseña maestra se convierte en claves dentro del navegador (Argon2id + HKDF).</li>
+<li>El servidor solo guarda un verificador y blobs AES-256-GCM ligados a su fila; rotar la contraseña reenvuelve una clave de 32 bytes en lugar de recifrar la bóveda.</li>
+<li>Rediseñé la versión original tras modelar la amenaza de una base de datos comprometida, sacando la derivación de claves del servidor.</li>
+</ul></div>
+<div class="entry">
+<div class="row"><span><b>DataMap</b> — Plataforma de migración de bases de datos</span><span class="right"><i>FastAPI, TypeScript, PostgreSQL, Redis, Docker</i></span></div>
+<ul>
+<li>Inspecciona esquemas de PostgreSQL, MySQL, SQL Server y Oracle a través de sus catálogos, mapea tablas y columnas en una interfaz de grafo y genera scripts <code>INSERT INTO … SELECT</code>.</li>
+<li>Ordena la migración con un orden topológico sobre el grafo de claves foráneas que falla de forma explícita ante ciclos.</li>
+<li>El mapeo nunca lee filas de usuario; la ejecución es opcional, hace copia de las tablas destino y admite un modo de prueba que revierte. Las credenciales se cifran con una clave derivada que nunca se almacena.</li>
+</ul></div>
+<div class="entry">
+<div class="row"><span><b>ReactorGuard</b> — Detección de anomalías en un reactor nuclear simulado</span><span class="right"><i>Python, Kafka, Kubernetes, Terraform</i></span></div>
+<ul>
+<li>Modelo de cinética puntual que conserva la energía de un reactor de agua a presión y genera fallos de proceso y de instrumento etiquetados.</li>
+<li>Detectores de fallos de sensor sobre un stream de Kafka; GKE y Kafka definidos con Terraform y Strimzi. Capa de alertas por ML en desarrollo.</li>
+</ul></div>
+
+<h2>Competencias</h2>
+<div class="skills">
+<p><b>Idiomas:</b> español (nativo); inglés (B2 First, Cambridge, 2020).</p>
+<p><b>Programación:</b> Python, TypeScript, Java, C++, SQL.</p>
+<p><b>ML y datos:</b> NumPy, pandas, scikit-learn, XGBoost, PyTorch.</p>
+<p><b>Backend y web:</b> FastAPI, Django, Node.js/Express, Spring, React.</p>
+<p><b>Infraestructura:</b> Linux, Docker, Kubernetes, Terraform, Kafka, Google Cloud (GKE), pipelines de CI, PostgreSQL, Redis.</p>
+</div>
+</body></html>
