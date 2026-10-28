@@ -13,5 +13,8 @@ export const GITHUB_USER = 'guillesanper';
 export const GITHUB_URL = `https://github.com/${GITHUB_USER}`;
 export const LINKEDIN_URL = 'https://www.linkedin.com/in/guillermo-sanchez-perez-a405613a5/'; // optional
 export const CONTACT_EMAIL = 'guilsa06@ucm.es';
-// Served from public/. The home page hides the link while the file is missing.
-export const CV_PATH = '/cv.pdf';
+// One PDF per language, served from public/ and built from cv/ (see cv/render.mjs).
+export const CV_PATHS = {
+	en: '/cv/guillermo-sanchez-cv-en.pdf',
+	es: '/cv/guillermo-sanchez-cv-es.pdf'
+} as const;

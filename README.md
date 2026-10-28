@@ -57,6 +57,12 @@ domain means editing that one line.
 Site-wide details — name, role, contact email, social links — live in
 [`src/consts.ts`](src/consts.ts).
 
+### CV
+
+The CV exists in English and Spanish and is offered from the contact menu on the home page.
+Its source is plain HTML in [`cv/`](cv/); after editing it, regenerate both PDFs in
+`public/cv/` with `node cv/render.mjs` (needs Playwright with Chromium) and commit them.
+
 ### Environment variables
 
 All optional; the site builds and runs with every one of them unset, which is the default.
