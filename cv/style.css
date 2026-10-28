@@ -1,10 +1,10 @@
-@page { size: A4; margin: 14mm 16mm; }
+@page { size: A4; margin: 12mm 16mm; }
 * { box-sizing: border-box; }
 body { font-family: "Liberation Serif", "Times New Roman", serif; font-size: 10.5pt; line-height: 1.28; color: #000; margin: 0; }
 h1 { text-align: center; font-size: 19pt; margin: 0 0 2pt; letter-spacing: .5pt; }
 .contact { text-align: center; font-size: 9.8pt; }
 .web { text-align: center; font-size: 10.5pt; margin: 2pt 0 8pt; }
-.contact a, .web a { color: #000; text-decoration: none; }
+.contact a, .web a { color: #000; text-decoration: none; white-space: nowrap; }
 h2 { font-size: 11pt; text-transform: uppercase; letter-spacing: .6pt; border-bottom: .8pt solid #000; padding-bottom: 1pt; margin: 10pt 0 4pt; text-align: left; }
 .row { display: flex; justify-content: space-between; gap: 12pt; }
 .entry { margin-bottom: 6pt; break-inside: avoid; }
