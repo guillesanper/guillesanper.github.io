@@ -85,16 +85,16 @@ export const projects: Project[] = [
     }
   },
   {
-    name: 'Music Similarity Graphs',
+    name: 'Music Similarity with Siamese Networks',
     description:
-      'Bachelor\'s thesis in progress: do differences between audio representations (MFCC, MERT) produce significantly different song-similarity graphs? Paired bootstrap evaluation against a random baseline, on a problem with no ground truth.',
+      'Bachelor\'s thesis in progress, in a team of two. Siamese networks trained with contrastive and triplet losses learn song embeddings from log-mel spectrograms, MERT embeddings and acoustic descriptors, and are compared against classical classifiers, MFCC and MERT. The resulting similarity graphs are evaluated on FMA and MagnaTagATune with Recall@K, MAP and nDCG, using paired bootstrap confidence intervals with Holm correction.',
     demoLink: `${GITHUB_URL}/music-similarity-ai`,
     tags: ['Python', 'PyTorch'],
     i18n: {
       es: {
-        name: 'Grafos de similitud musical',
+        name: 'Similitud musical con redes siamesas',
         description:
-          'TFG en curso: ¿producen las diferencias entre representaciones de audio (MFCC, MERT) grafos de similitud entre canciones significativamente distintos? Evaluación con bootstrap pareado frente a un baseline aleatorio, sobre un problema sin verdad de referencia.'
+          'TFG en curso, en equipo de dos. Redes siamesas entrenadas con pérdida contrastiva y triplet aprenden embeddings de canciones a partir de espectrogramas log-mel, embeddings de MERT y descriptores acústicos, y se comparan con clasificadores clásicos, MFCC y MERT. Los grafos de similitud resultantes se evalúan en FMA y MagnaTagATune con Recall@K, MAP y nDCG, con intervalos de confianza por bootstrap pareado y corrección de Holm.'
       }
     }
   },

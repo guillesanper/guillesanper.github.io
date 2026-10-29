@@ -68,8 +68,9 @@ export const ui = {
 		'contact.copied': 'Copied!',
 		'contact.compose': 'Open mail app',
 		'contact.linkedin': 'LinkedIn',
+		'contact.cv': 'CV',
+		'contact.cvMenu': 'CV language',
 		'home.ctaGithub': 'GitHub',
-		'home.ctaCv': 'Download CV',
 
 		'about.seoTitle': 'About Me',
 		'about.seoDescription':
@@ -171,8 +172,9 @@ export const ui = {
 		'contact.copied': '¡Copiado!',
 		'contact.compose': 'Abrir app de correo',
 		'contact.linkedin': 'LinkedIn',
+		'contact.cv': 'Currículum',
+		'contact.cvMenu': 'Idioma del currículum',
 		'home.ctaGithub': 'GitHub',
-		'home.ctaCv': 'Descargar CV',
 
 		'about.seoTitle': 'Sobre mí',
 		'about.seoDescription':
