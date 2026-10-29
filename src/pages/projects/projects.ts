@@ -99,15 +99,15 @@ export const projects: Project[] = [
     }
   },
   {
-    name: 'BibliotecaUCM',
+    name: 'ElecTrip',
     description:
-      'Small server-rendered Express app for managing a university library\'s staff: listing with filters by shift, ID and name, create and edit forms validated with express-validator, photo uploads with Multer, soft deletes, and an accessibility page whose text size and colours persist in cookies.',
-    demoLink: `${GITHUB_URL}/BibliotecaUCM`,
-    tags: ['Node.js', 'Express', 'EJS', 'Bootstrap'],
+      'Electric vehicle fleet management for a network of dealerships, built in a team of two. Express and MySQL with server-rendered EJS views, admin and employee roles enforced by session middleware, and a reservation lifecycle (booked, in progress, finished, rated) that rejects overlapping dates for the same vehicle. Admins bulk-load dealerships and vehicles from JSON in a single transaction and get a Leaflet map and Chart.js statistics. The app is bilingual, and accessibility preferences are stored per user.',
+    demoLink: `${GITHUB_URL}/AW_PROYECTO`,
+    tags: ['Node.js', 'Express', 'MySQL', 'EJS', 'Bootstrap', 'Leaflet'],
     i18n: {
       es: {
         description:
-          'Pequeña aplicación Express renderizada en servidor para gestionar el personal de una biblioteca universitaria: listado con filtros por turno, identificador y nombre, formularios de alta y edición validados con express-validator, subida de fotos con Multer, borrado lógico y una página de accesibilidad cuyo tamaño de texto y colores se guardan en cookies.'
+          'Gestión de flotas de vehículos eléctricos para una red de concesionarios, en equipo de dos. Express y MySQL con vistas EJS renderizadas en servidor, roles de administrador y empleado aplicados con middleware de sesión, y un ciclo de vida de reservas (reservada, en curso, finalizada, valorada) que rechaza fechas solapadas para un mismo vehículo. Los administradores cargan concesionarios y vehículos desde JSON en una única transacción y tienen un mapa con Leaflet y estadísticas con Chart.js. La aplicación es bilingüe y las preferencias de accesibilidad se guardan por usuario.'
       }
     }
   }
