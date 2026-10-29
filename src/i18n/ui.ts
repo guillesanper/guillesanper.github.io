@@ -56,7 +56,7 @@ export const ui = {
 		'home.intro1':
 			"Final-year Software Engineering student in Madrid. I build ML systems, infrastructure tooling, and applications where the security model is decided before the first line of code - not added afterwards.",
 		'home.intro2':
-			'Currently looking for Platform Engineering, Cloud Engineering or DevSecOps work.',
+			'Currently looking for software engineering roles on security products, backend or infrastructure.',
 		'home.moreAboutMe': 'More about me',
 		'home.recentPosts': 'Recent Posts',
 		'home.myProjects': 'My Projects',
@@ -81,7 +81,7 @@ export const ui = {
 		'about.p2':
 			'None of those courses was a security course, and yet that is where nearly every project has ended up: a password manager whose server cannot read the vaults it stores, a database migration platform whose schema mapping never reads a single row, an intrusion detection system on CICIDS2017 whose architecture is determined by the cost of a false negative. Encryption and threat modelling were never the objective; they became unavoidable the moment the system had to hold up.',
 		'about.p3':
-			"I'm looking for a role in Platform Engineering, Cloud Engineering or DevSecOps. Beyond the title, what I want is to join a team running systems in production and learn how they hold up in practice — starting at whichever point in the stack is most useful.",
+			"I'm looking for a software engineering role building security products, backend or infrastructure systems. Beyond the title, what I want is to join a team running systems in production and learn how they hold up in practice — starting at whichever point in the stack is most useful.",
 		'about.workHeading': 'What I work with',
 		'about.workBody':
 			"I choose the tool for the part of the problem I'm worried about. Python for anything ML — NumPy, scikit-learn, XGBoost, pandas — with FastAPI when a model has to sit behind an endpoint; I implement neural networks by hand in NumPy when I need to understand exactly what the gradients are doing, and use a framework when I don't. TypeScript and React when the complexity lives in the browser, Django or Node when it lives in an API over data, Java and Spring when a stricter type system earns its keep, C++ when the cost per operation is what matters. Underneath all of it: Linux, Docker, CI pipelines, SQL and the connector layer around it, deployed on Google Cloud.",
@@ -129,7 +129,7 @@ export const ui = {
 		'author.bio1':
 			'Guillermo is a final-year Software Engineering student in Madrid. He builds ML systems, infrastructure tooling and applications where the security model is decided before the first line of code.',
 		'author.bio2':
-			'He is looking for Platform Engineering, Cloud Engineering or DevSecOps work. Reach him at',
+			'He is looking for software engineering roles on security products, backend or infrastructure. Reach him at',
 
 		'notFound.seoTitle': '404 Page Not Found',
 		'notFound.seoDescription': '404 Page Not Found',
@@ -160,7 +160,7 @@ export const ui = {
 		'home.intro1':
 			'Estudiante de último año de Ingeniería del Software en Madrid. Construyo sistemas de ML, herramientas de infraestructura y aplicaciones donde el modelo de seguridad se decide antes de la primera línea de código, no se añade después.',
 		'home.intro2':
-			'Actualmente busco trabajo en Platform Engineering, Cloud Engineering o DevSecOps.',
+			'Actualmente busco puestos de ingeniería de software en productos de seguridad, backend o infraestructura.',
 		'home.moreAboutMe': 'Más sobre mí',
 		'home.recentPosts': 'Artículos recientes',
 		'home.myProjects': 'Mis proyectos',
@@ -185,7 +185,7 @@ export const ui = {
 		'about.p2':
 			'Ninguna de esas asignaturas era de ciberseguridad y, aun así, es donde han desembocado casi todos los proyectos: un gestor de contraseñas cuyo servidor no puede leer las bóvedas que almacena, una plataforma de migración de bases de datos cuyo mapeo de esquemas nunca lee una sola fila, un detector de intrusiones sobre CICIDS2017 cuya arquitectura viene determinada por el coste de un falso negativo. El cifrado y el modelado de amenazas nunca fueron el objetivo; se volvieron inevitables en cuanto el sistema tuvo que sostenerse.',
 		'about.p3':
-			'Busco un puesto en Platform Engineering, Cloud Engineering o DevSecOps. Más allá del título, lo que quiero es incorporarme a un equipo con sistemas en producción y aprender cómo se sostienen en la práctica — empezando por el punto del stack donde resulte más útil.',
+			'Busco un puesto de ingeniería de software construyendo productos de seguridad, backend o sistemas de infraestructura. Más allá del título, lo que quiero es incorporarme a un equipo con sistemas en producción y aprender cómo se sostienen en la práctica — empezando por el punto del stack donde resulte más útil.',
 		'about.workHeading': 'Con qué trabajo',
 		'about.workBody':
 			'Elijo la herramienta según la parte del problema que me preocupa. Python para todo lo de ML — NumPy, scikit-learn, XGBoost, pandas — con FastAPI cuando un modelo tiene que quedar detrás de un endpoint; implemento redes neuronales a mano en NumPy cuando necesito entender exactamente qué están haciendo los gradientes, y recurro a un framework cuando no. TypeScript y React cuando la complejidad está en el navegador, Django o Node cuando está en una API sobre datos, Java y Spring cuando compensa un sistema de tipos más estricto, C++ cuando lo que importa es el coste por operación. Debajo de todo: Linux, Docker, pipelines de CI, SQL y la capa de conectores que lo rodea, desplegado en Google Cloud.',
@@ -231,7 +231,7 @@ export const ui = {
 		'author.bio1':
 			'Guillermo es estudiante de último año de Ingeniería del Software en Madrid. Construye sistemas de ML, herramientas de infraestructura y aplicaciones donde el modelo de seguridad se decide antes de la primera línea de código.',
 		'author.bio2':
-			'Busca trabajo en Platform Engineering, Cloud Engineering o DevSecOps. Puedes escribirle a',
+			'Busca puestos de ingeniería de software en productos de seguridad, backend o infraestructura. Puedes escribirle a',
 
 		'notFound.seoTitle': '404 Página no encontrada',
 		'notFound.seoDescription': '404 Página no encontrada',
