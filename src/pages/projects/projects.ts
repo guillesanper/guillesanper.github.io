@@ -97,19 +97,6 @@ export const projects: Project[] = [
           'TFG en curso, en equipo de dos. Redes siamesas entrenadas con pérdida contrastiva y triplet aprenden embeddings de canciones a partir de espectrogramas log-mel, embeddings de MERT y descriptores acústicos, y se comparan con clasificadores clásicos, MFCC y MERT. Los grafos de similitud resultantes se evalúan en FMA y MagnaTagATune con Recall@K, MAP y nDCG, con intervalos de confianza por bootstrap pareado y corrección de Holm.'
       }
     }
-  },
-  {
-    name: 'ElecTrip',
-    description:
-      'Electric vehicle fleet management for a network of dealerships, built in a team of two. Express and MySQL with server-rendered EJS views, admin and employee roles enforced by session middleware, and a reservation lifecycle (booked, in progress, finished, rated) that rejects overlapping dates for the same vehicle. Admins bulk-load dealerships and vehicles from JSON in a single transaction and get a Leaflet map and Chart.js statistics. The app is bilingual, and accessibility preferences are stored per user.',
-    demoLink: `${GITHUB_URL}/AW_PROYECTO`,
-    tags: ['Node.js', 'Express', 'MySQL', 'EJS', 'Bootstrap', 'Leaflet'],
-    i18n: {
-      es: {
-        description:
-          'Gestión de flotas de vehículos eléctricos para una red de concesionarios, en equipo de dos. Express y MySQL con vistas EJS renderizadas en servidor, roles de administrador y empleado aplicados con middleware de sesión, y un ciclo de vida de reservas (reservada, en curso, finalizada, valorada) que rechaza fechas solapadas para un mismo vehículo. Los administradores cargan concesionarios y vehículos desde JSON en una única transacción y tienen un mapa con Leaflet y estadísticas con Chart.js. La aplicación es bilingüe y las preferencias de accesibilidad se guardan por usuario.'
-      }
-    }
   }
 ]
 
