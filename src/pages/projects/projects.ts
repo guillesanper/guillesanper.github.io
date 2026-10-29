@@ -97,19 +97,6 @@ export const projects: Project[] = [
           'TFG en curso, en equipo de dos. Redes siamesas entrenadas con pérdida contrastiva y triplet aprenden embeddings de canciones a partir de espectrogramas log-mel, embeddings de MERT y descriptores acústicos, y se comparan con clasificadores clásicos, MFCC y MERT. Los grafos de similitud resultantes se evalúan en FMA y MagnaTagATune con Recall@K, MAP y nDCG, con intervalos de confianza por bootstrap pareado y corrección de Holm.'
       }
     }
-  },
-  {
-    name: 'BibliotecaUCM',
-    description:
-      'Small server-rendered Express app for managing a university library\'s staff: listing with filters by shift, ID and name, create and edit forms validated with express-validator, photo uploads with Multer, soft deletes, and an accessibility page whose text size and colours persist in cookies.',
-    demoLink: `${GITHUB_URL}/BibliotecaUCM`,
-    tags: ['Node.js', 'Express', 'EJS', 'Bootstrap'],
-    i18n: {
-      es: {
-        description:
-          'Pequeña aplicación Express renderizada en servidor para gestionar el personal de una biblioteca universitaria: listado con filtros por turno, identificador y nombre, formularios de alta y edición validados con express-validator, subida de fotos con Multer, borrado lógico y una página de accesibilidad cuyo tamaño de texto y colores se guardan en cookies.'
-      }
-    }
   }
 ]
 
