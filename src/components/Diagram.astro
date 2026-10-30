@@ -1,0 +1,20 @@
+---
+/**
+ * A Mermaid diagram. Same markup as the ```mermaid fences in project bodies
+ * (see src/remarkMermaid.ts); src/scripts/diagrams.ts turns the source into
+ * an SVG in the browser.
+ */
+interface Props {
+	code: string;
+	caption?: string;
+	/** The page-header diagram gets more room and a lighter frame. */
+	lead?: boolean;
+}
+
+const { code, caption, lead = false } = Astro.props;
+---
+
+<figure class:list={['diagram not-prose', { 'diagram--lead': lead }]}>
+	<pre class='diagram-canvas mermaid-source' aria-label={caption}>{code.trim()}</pre>
+	{caption && <figcaption class='diagram-caption'>{caption}</figcaption>}
+</figure>

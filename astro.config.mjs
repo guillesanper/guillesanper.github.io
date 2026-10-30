@@ -3,6 +3,7 @@ import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
 import tailwind from "@astrojs/tailwind";
 import { autoNewTabExternalLinks } from './src/autoNewTabExternalLinks';
+import { remarkMermaid } from './src/remarkMermaid';
 
 import partytown from "@astrojs/partytown";
 
@@ -35,6 +36,9 @@ export default defineConfig({
   ],
   markdown: {
     extendDefaultPlugins: true,
+    // ```mermaid fences become diagram figures, rendered in the browser on
+    // the pages that have them (see src/components/Diagram.astro).
+    remarkPlugins: [remarkMermaid],
     // Links in post bodies that point outside the site open in a new tab. The
     // domain must be the production one: with 'localhost:4321' every absolute
     // self-link in a post would be misread as external.

@@ -1,0 +1,25 @@
+---
+/**
+ * What a design decision gave up, under the decision's heading in a project
+ * page. In MDX:
+ *
+ *   <Tradeoffs>
+ *     <div slot="considered">The alternative, and why it lost.</div>
+ *     <div slot="cost">What choosing this made harder.</div>
+ *   </Tradeoffs>
+ */
+import { getLangFromUrl, useTranslations } from '@src/i18n/utils';
+
+const t = useTranslations(getLangFromUrl(Astro.url));
+---
+
+<div class='tradeoffs not-prose'>
+	<div>
+		<p class='tradeoffs-label'>{t('project.considered')}</p>
+		<slot name='considered' />
+	</div>
+	<div>
+		<p class='tradeoffs-label'>{t('project.cost')}</p>
+		<slot name='cost' />
+	</div>
+</div>
