@@ -3,6 +3,9 @@ import { defaultLang, type Lang } from "../../i18n/ui";
 
 export interface Project {
   name: string;
+  /** URL segment of the project page, `/projects/<slug>/`. The page exists
+   *  only once src/content/projects/<slug>.mdx does. */
+  slug: string;
   demoLink: string;
   tags?: string[],
   description?: string;
@@ -16,6 +19,7 @@ export interface Project {
 export const projects: Project[] = [
   {
     name: 'Sentinel',
+    slug: 'sentinel',
     description:
       'Intrusion detection platform on GKE with two tracks: log events and CICIDS2017 network flows through an Isolation Forest → XGBoost cascade. Terraform modules for VPC, IAM and the cluster, kustomize overlays, default-deny network policies, and training as Kubernetes Jobs. The flow track is where a chronological split exposed two of my own published numbers as wrong.',
     demoLink: `${GITHUB_URL}/sentinel-platform`,
@@ -30,6 +34,7 @@ export const projects: Project[] = [
   },
   {
     name: 'Password Manager',
+    slug: 'password-manager',
     description:
       'Self-hosted password and file manager where the server cannot read what it stores. The master password becomes keys in the browser (Argon2id + HKDF), the server holds only a verifier and AES-256-GCM blobs bound to their row, and rotating the password rewraps 32 bytes instead of re-encrypting the vault.',
     demoLink: `${GITHUB_URL}/django-password-manager`,
@@ -45,6 +50,7 @@ export const projects: Project[] = [
   },
   {
     name: 'DataMap',
+    slug: 'datamap',
     description:
       'Data migration platform that introspects PostgreSQL, MySQL, SQL Server and Oracle schemas through their catalogs, maps tables and columns in a graph UI, and generates INSERT INTO ... SELECT scripts. Migration order comes from a topological sort over the foreign-key graph that fails explicitly on cycles.',
     demoLink: `${GITHUB_URL}/datamaper-migration-assistant`,
@@ -59,6 +65,7 @@ export const projects: Project[] = [
   },
   {
     name: 'ReactorGuard',
+    slug: 'reactorguard',
     description:
       'Anomaly detection for a simulated pressurised water reactor. An energy-conserving point-kinetics model generates labelled process and instrument faults, and sensor-fault detectors run on a Kafka stream. GKE and Kafka are defined in Terraform and Strimzi. The ML alerting layer is the next phase.',
     demoLink: `${GITHUB_URL}/ReactorGuard`,
@@ -73,6 +80,7 @@ export const projects: Project[] = [
   },
   {
     name: 'FlappyBirdNEAT',
+    slug: 'flappybird-neat',
     description:
       'Neuroevolution lab in Java with no ML libraries: a fixed-topology genetic algorithm and full NEAT, compared across 30 paired seeds with corrected statistics. NEAT solves 26/30 runs against 20/30 for the best GA, and training gives bit-identical results on 1 or 8 threads.',
     demoLink: `${GITHUB_URL}/FlappyBirdNeat`,
@@ -86,6 +94,7 @@ export const projects: Project[] = [
   },
   {
     name: 'Music Similarity with Siamese Networks',
+    slug: 'music-similarity',
     description:
       'Bachelor\'s thesis in progress, in a team of two. Siamese networks trained with contrastive and triplet losses learn song embeddings from log-mel spectrograms, MERT embeddings and acoustic descriptors, and are compared against classical classifiers, MFCC and MERT. The resulting similarity graphs are evaluated on FMA and MagnaTagATune with Recall@K, MAP and nDCG, using paired bootstrap confidence intervals with Holm correction.',
     demoLink: `${GITHUB_URL}/music-similarity-ai`,

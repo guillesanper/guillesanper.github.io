@@ -27,4 +27,26 @@ const blogEs = defineCollection({
 	schema: postSchema
 });
 
-export const collections = { blog, blogEs };
+// Project pages. Card data (name, summary, tags, links) stays in
+// src/pages/projects/projects.ts; an entry here, keyed by the project's
+// `slug`, adds the long-form page at /projects/<slug>/. `projectsEs` works
+// like `blogEs`: a missing translation falls back to English.
+const projectSchema = z.object({
+	/** Mermaid source for the diagram at the top of the page. */
+	diagram: z.string(),
+	/** One or two sentences on how to read that diagram. */
+	diagramCaption: z.string(),
+	updatedDate: z.coerce.date()
+});
+
+const projects = defineCollection({
+	loader: glob({ pattern: ["**/*.mdx", "!**/_*"], base: "./src/content/projects" }),
+	schema: projectSchema
+});
+
+const projectsEs = defineCollection({
+	loader: glob({ pattern: ["**/*.mdx", "!**/_*"], base: "./src/content/projects-es" }),
+	schema: projectSchema
+});
+
+export const collections = { blog, blogEs, projects, projectsEs };

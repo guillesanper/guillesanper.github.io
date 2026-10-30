@@ -47,6 +47,24 @@ overrides in their own frontmatter and data. A small client-side script routes f
 visitors to their preferred language and remembers the choice in `localStorage`; the 404 page
 opts out of that redirect on purpose.
 
+## Project pages
+
+Every project card can open a page at `/projects/<slug>/` with an architecture diagram, how
+the system works and the design decisions behind it.
+
+- Card data (name, summary, tags, links) stays in
+  [`src/pages/projects/projects.ts`](src/pages/projects/projects.ts), including its `slug`.
+- The page is `src/content/projects/<slug>.mdx`. Its frontmatter holds the header diagram
+  (`diagram`, Mermaid source) and `diagramCaption`. A project with no file keeps linking
+  straight to its repository.
+- In the body, a ```` ```mermaid ```` fence becomes a diagram (`caption="..."` in the fence
+  adds a caption), and `<Tradeoffs>` records what a decision gave up.
+- Spanish goes in `src/content/projects-es/<slug>.mdx`; without one, `/es/` serves the
+  English page with a notice.
+
+Diagrams render in the browser, and Mermaid is only downloaded on pages that have one. The
+visual rules are in [`DESIGN.md`](DESIGN.md).
+
 ## Configuration
 
 The public origin is defined **once**, as `SITE_URL` in

@@ -1,0 +1,89 @@
+---
+import BaseLayout from '@src/layouts/BaseLayout.astro';
+import Prose from '@src/components/Prose.astro';
+import TechPill from '@src/components/TechPill.astro';
+import Diagram from '@src/components/Diagram.astro';
+import Tradeoffs from '@src/components/Tradeoffs.astro';
+import FormattedDate from '@src/components/FormattedDate.astro';
+import TableOfContent from '@src/components/widgets/TableOfContent.astro';
+import { render } from 'astro:content';
+import { getLangFromUrl, useTranslations, localizePath } from '@src/i18n/utils';
+import type { ResolvedProjectPage } from '@src/i18n/projects';
+
+interface Props {
+	page: ResolvedProjectPage;
+}
+
+const { page } = Astro.props;
+const { project, entry, isFallback } = page;
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+const { diagram, diagramCaption, updatedDate } = entry.data;
+const { Content, headings } = await render(entry);
+---
+
+<BaseLayout title={project.name} description={project.description ?? ''}>
+	<div class='container'>
+		<a href={localizePath('/projects/', lang)} class='arrow-link arrow-link--back'>
+			<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M19 12H5'/><path d='m12 19-7-7 7-7'/></svg>
+			{t('project.back')}
+		</a>
+
+		<header class='mt-6 mb-10'>
+			<h1 class='text-3xl sm:text-4xl font-bold tracking-tight'>{project.name}</h1>
+			<p class='mt-4 max-w-[62ch] text-lg leading-relaxed text-zinc-700 dark:text-zinc-300 text-pretty'>
+				{project.description}
+			</p>
+
+			<div class='mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
+				<div class='flex flex-wrap gap-2'>
+					{(project.tags ?? []).map((tag: string) => <TechPill name={tag} />)}
+				</div>
+				<div class='flex shrink-0 items-center gap-5'>
+					{
+						project.postLink && (
+							<a class='arrow-link whitespace-nowrap' href={localizePath(project.postLink, lang)}>
+								{t('project.article')}
+								<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M5 12h14'/><path d='m12 5 7 7-7 7'/></svg>
+							</a>
+						)
+					}
+					<a class='arrow-link whitespace-nowrap' href={project.demoLink} target='_blank' rel={project.demoLinkRel ?? 'noopener'}>
+						{t('project.source')}
+						<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M15 3h6v6'/><path d='M10 14 21 3'/><path d='M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6'/></svg>
+					</a>
+				</div>
+			</div>
+		</header>
+
+		<Diagram code={diagram} caption={diagramCaption} lead />
+
+		<div class='mt-12 lg:flex gap-10'>
+			<main class='min-w-0 grow'>
+				{
+					isFallback && (
+						<p class='text-sm text-zinc-600 dark:text-zinc-400 border border-zinc-300 dark:border-zinc-700 rounded-lg px-3 py-2 mb-6'>
+							{t('project.onlyInEnglish')}
+						</p>
+					)
+				}
+				<article>
+					<Prose>
+						<Content components={{ Tradeoffs }} />
+					</Prose>
+				</article>
+				<p class='mt-12 text-sm text-zinc-500 dark:text-zinc-400'>
+					{t('post.updatedOn')} <FormattedDate date={updatedDate} />
+				</p>
+			</main>
+			<aside class='shrink-0 w-[240px] hidden lg:block'>
+				<TableOfContent headings={headings} />
+			</aside>
+		</div>
+	</div>
+</BaseLayout>
+
+<script>
+	import '@src/scripts/diagrams';
+</script>

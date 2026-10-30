@@ -10,11 +10,31 @@
 		--link-color: var(--accent);
 		--soft-border-color: theme('colors.zinc.200');
 		--background-surface-color: theme('colors.zinc.100');
+
+		/* Architecture diagrams (src/scripts/diagrams.ts reads these). Nodes are
+		   white cards on a faint surface; the accent marks what never leaves
+		   the user's control, so it carries meaning, not decoration.
+		   Mermaid parses these itself, so they must stay plain hex values. */
+		--diagram-surface: theme('colors.zinc.50');
+		--diagram-dot: theme('colors.zinc.200');
+		--diagram-node: theme('colors.white');
+		--diagram-cluster: theme('colors.zinc.100');
+		--diagram-border: theme('colors.zinc.300');
+		--diagram-line: theme('colors.zinc.400');
+		--diagram-text: theme('colors.zinc.800');
 	}
 	.dark {
 		--accent: theme('colors.emerald.400');
 		--soft-border-color: theme('colors.zinc.700');
 		--background-surface-color: theme('colors.zinc.800');
+
+		--diagram-surface: #1f1f23;
+		--diagram-dot: theme('colors.zinc.700');
+		--diagram-node: theme('colors.zinc.900');
+		--diagram-cluster: theme('colors.zinc.800');
+		--diagram-border: theme('colors.zinc.600');
+		--diagram-line: theme('colors.zinc.500');
+		--diagram-text: theme('colors.zinc.200');
 	}
 
 	html {
@@ -85,5 +105,81 @@
 	}
 	.arrow-link:hover svg {
 		transform: translateX(2px);
+	}
+	.arrow-link--back:hover svg {
+		transform: translateX(-2px);
+	}
+}
+
+@layer components {
+	/* Diagram figure: shared by Diagram.astro and ```mermaid fences. */
+	.diagram {
+		@apply my-8;
+	}
+	.diagram-canvas {
+		@apply overflow-x-auto rounded-xl border border-zinc-200 px-5 py-6 dark:border-zinc-700;
+		background-color: var(--diagram-surface);
+		/* Until the SVG arrives (or without JS) this is the readable source. */
+		@apply whitespace-pre text-[0.8rem] leading-relaxed text-zinc-500 dark:text-zinc-400;
+		font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+	}
+	.diagram-canvas.is-rendered {
+		@apply flex whitespace-normal;
+	}
+	.diagram-canvas.is-rendered > svg {
+		/* Centered when it fits, scrollable from its left edge when it doesn't. */
+		@apply mx-auto h-auto max-w-none shrink-0;
+	}
+	@media (max-width: 639px) {
+		/* On a phone a stacked flowchart is only slightly too wide: scale it
+		   to fit rather than hide half of it behind a sideways scroll. Sequence
+		   diagrams can't stack, so they keep their size and scroll. */
+		.diagram-canvas {
+			@apply px-3;
+		}
+		.diagram-canvas.is-flowchart > svg {
+			@apply max-w-full shrink;
+		}
+	}
+	/* The lead diagram is the one bold element on a project page: a drafting
+	   surface with a dot grid, wider padding and no hard frame. */
+	.diagram--lead .diagram-canvas {
+		@apply px-4 py-10 sm:px-6;
+		background-image: radial-gradient(var(--diagram-dot) 1px, transparent 1.2px);
+		background-size: 18px 18px;
+		background-position: 9px 9px;
+	}
+	.diagram-caption {
+		@apply mt-3 max-w-[65ch] text-sm leading-relaxed text-zinc-600 dark:text-zinc-400;
+	}
+
+	/* `class X secret` in a diagram: keys and plaintext that stay with the user. */
+	.diagram .secret :is(rect, polygon, circle, path.basic) {
+		stroke: var(--accent) !important;
+		stroke-width: 1.5px !important;
+	}
+	.diagram .secret .nodeLabel {
+		color: var(--accent) !important;
+	}
+	/* Cluster titles read as section labels, not as node text. */
+	.diagram .cluster-label .nodeLabel {
+		@apply text-[0.8rem] font-medium text-zinc-500 dark:text-zinc-400;
+	}
+	.diagram .cluster rect {
+		stroke-dasharray: 4 4;
+	}
+
+	/* What a design decision gave up: under each decision in a project page. */
+	.tradeoffs {
+		@apply mt-4 mb-8 grid gap-x-8 gap-y-4 border-t border-zinc-200 pt-4 text-[0.95rem] leading-relaxed sm:grid-cols-2 dark:border-zinc-700;
+	}
+	.tradeoffs-label {
+		@apply mb-1 text-sm font-medium text-zinc-500 dark:text-zinc-400;
+	}
+	.tradeoffs p {
+		@apply text-zinc-700 dark:text-zinc-300;
+	}
+	.tradeoffs code {
+		@apply rounded bg-zinc-100 px-1 py-0.5 text-[0.85em] dark:bg-zinc-800;
 	}
 }
