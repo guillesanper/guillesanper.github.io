@@ -52,14 +52,14 @@ export const projects: Project[] = [
     name: 'DataMap',
     slug: 'datamap',
     description:
-      'Data migration platform that introspects PostgreSQL, MySQL, SQL Server and Oracle schemas through their catalogs, maps tables and columns in a graph UI, and generates INSERT INTO ... SELECT scripts. Migration order comes from a topological sort over the foreign-key graph that fails explicitly on cycles.',
+      'Data migration platform that introspects PostgreSQL, MySQL, SQL Server and Oracle schemas through their catalogs, maps tables and columns in a graph UI, and generates INSERT INTO ... SELECT scripts. Credentials are encrypted under a key derived from a passphrase, connectors verify TLS and refuse private hosts by default, and a foreign-key graph reports load order and cycles.',
     demoLink: `${GITHUB_URL}/datamaper-migration-assistant`,
     postLink: '/2026-03-08-encrypted-database-connectors/',
     tags: ['FastAPI', 'TypeScript', 'Docker', 'Redis', 'PostgreSQL'],
     i18n: {
       es: {
         description:
-          'Plataforma de migración de datos que inspecciona esquemas de PostgreSQL, MySQL, SQL Server y Oracle a través de sus catálogos, mapea tablas y columnas en una interfaz de grafo y genera scripts INSERT INTO ... SELECT. El orden de migración sale de un orden topológico sobre el grafo de claves foráneas que falla de forma explícita ante ciclos.'
+          'Plataforma de migración de datos que inspecciona esquemas de PostgreSQL, MySQL, SQL Server y Oracle a través de sus catálogos, mapea tablas y columnas en una interfaz de grafo y genera scripts INSERT INTO ... SELECT. Las credenciales se cifran con una clave derivada de una frase de paso, los conectores verifican TLS y rechazan hosts privados por defecto, y un grafo de claves foráneas indica el orden de carga y los ciclos.'
       }
     }
   },
@@ -96,14 +96,14 @@ export const projects: Project[] = [
     name: 'Music Similarity with Siamese Networks',
     slug: 'music-similarity',
     description:
-      'Bachelor\'s thesis in progress, in a team of two. Siamese networks trained with contrastive and triplet losses learn song embeddings from log-mel spectrograms, MERT embeddings and acoustic descriptors, and are compared against classical classifiers, MFCC and MERT. The resulting similarity graphs are evaluated on FMA and MagnaTagATune with Recall@K, MAP and nDCG, using paired bootstrap confidence intervals with Holm correction.',
+      'Bachelor\'s thesis in progress, in a team of two, on whether differences between music representations lead to significantly different similarity graphs. The MFCC and MERT baselines, the kNN graph and the evaluation on FMA are built: Recall@K, MAP and nDCG with an artist-clustered paired bootstrap and Holm correction. Siamese networks with contrastive and triplet losses, and the human judgements of MagnaTagATune, come next.',
     demoLink: `${GITHUB_URL}/music-similarity-ai`,
     tags: ['Python', 'PyTorch'],
     i18n: {
       es: {
         name: 'Similitud musical con redes siamesas',
         description:
-          'TFG en curso, en equipo de dos. Redes siamesas entrenadas con pérdida contrastiva y triplet aprenden embeddings de canciones a partir de espectrogramas log-mel, embeddings de MERT y descriptores acústicos, y se comparan con clasificadores clásicos, MFCC y MERT. Los grafos de similitud resultantes se evalúan en FMA y MagnaTagATune con Recall@K, MAP y nDCG, con intervalos de confianza por bootstrap pareado y corrección de Holm.'
+          'TFG en curso, en equipo de dos, sobre si las diferencias entre representaciones musicales producen grafos de similitud significativamente distintos. Están construidas las líneas base de MFCC y MERT, el grafo kNN y la evaluación sobre FMA: Recall@K, MAP y nDCG con bootstrap pareado agrupado por artista y corrección de Holm. Lo siguiente son las redes siamesas con pérdida contrastiva y triplet, y los juicios humanos de MagnaTagATune.'
       }
     }
   }
