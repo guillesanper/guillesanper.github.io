@@ -28,8 +28,8 @@ if (canvases.length) {
 			theme: 'base',
 			securityLevel: 'strict',
 			fontFamily: '"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif',
-			// Natural size, never squeezed: narrow screens scroll the canvas
-			// instead of shrinking the labels below reading size.
+			// Natural size: on narrow screens render() decides whether the
+			// diagram can shrink to fit or should scroll instead.
 			flowchart: { useMaxWidth: false, curve: 'basis', padding: 14, nodeSpacing: 28, rankSpacing: 44 },
 			sequence: { useMaxWidth: false, mirrorActors: false, actorMargin: 64, messageFontWeight: 400 },
 			themeVariables: {
