@@ -1,0 +1,143 @@
+---
+updatedDate: '2026-10-31'
+diagramCaption: 'Todo el TFG es un único pipeline: audio, representación, grafo de similitud y evaluación. Las cajas continuas funcionan hoy; las discontinuas son etapas posteriores. Cambiar de representación cambia una caja y nada más, que es lo que hace justa la comparación.'
+diagram: |
+  flowchart TB
+    audio[("FMA small<br/>7.994 pistas, 8 géneros")]
+    subgraph rep["Representaciones"]
+      direction LR
+      mfcc["MFCC<br/>80 dimensiones"]
+      mert["MERT, capa 6<br/>transformer congelado"]
+      siam["Redes siamesas<br/>contrastiva y triplet"]
+      mfcc ~~~ mert ~~~ siam
+    end
+    knn["Grafo kNN de similitud<br/>casi duplicados agrupados"]
+    subgraph ev["Evaluación"]
+      direction LR
+      genre["El género como proxy<br/>Recall@K, MAP, nDCG@10"]
+      human["Juicios humanos<br/>tripletas de MagnaTagATune"]
+      genre ~~~ human
+    end
+    audio --> rep --> knn --> ev
+    classDef planned stroke-dasharray: 5 5
+    class siam,human planned
+---
+
+Mi TFG, en curso y en equipo de dos. La similitud musical no tiene una definición operativa: ningún corpus público anota "suena parecido", así que el campo la mide a través de proxies como las etiquetas de género, las etiquetas de los oyentes y unos pocos conjuntos pequeños de juicios humanos. El TFG se pregunta si las diferencias entre representaciones musicales se traducen en diferencias significativas en los grafos de similitud que producen.
+
+El foco principal son las redes siamesas entrenadas sobre espectrogramas, embeddings preentrenados y descriptores acústicos. Se compararán con técnicas clásicas, con un clasificador CNN y con el modelo preentrenado MERT. La mayor parte del trabajo hasta ahora ha ido a conseguir que esa comparación sea fiable antes de entrenar nada.
+
+## Cómo funciona
+
+Cada experimento es un fichero YAML y un comando, `musicsim run`. El pipeline es el mismo para todas las representaciones:
+
+1. **Indexar.** FMA small se descarga con checksums y se indexa. El indexador comprueba las cifras de las que depende todo lo demás: 7.994 pistas utilizables en 8 géneros, y ningún artista compartido entre los splits de entrenamiento, validación y test.
+2. **Extraer.** El audio se convierte en un espectrograma log-mel en caché y después en una representación. MERT recibe cada clip de 30 segundos como seis ventanas de 5 segundos, porque así fue preentrenado, y sus 13 estados ocultos se guardan en caché por pista.
+3. **Construir el grafo.** Cada pista se enlaza con sus vecinos más cercanos. Las pistas con una similitud del coseno de al menos 0,9999, el mismo MP3 subido dos veces, se agrupan como casi duplicados.
+4. **Evaluar.** Cada pista del split de test consulta a las demás. Un vecino cuenta como relevante si comparte el género de la consulta, y una relevancia graduada sobre la jerarquía de géneros de FMA da crédito parcial. Los resultados se dan como Recall@K, MAP y nDCG@10, con intervalos de confianza por bootstrap.
+
+La referencia actual, sobre el split de test y sin casi duplicados: MFCC alcanza un MAP de 0,240 y un nDCG@10 de 0,363, frente a 0,132 y 0,129 de los embeddings aleatorios. Esas cifras las fija un test de regresión que se ejecuta sobre la descarga real, así que un cambio posterior que las mueva no pasa desapercibido.
+
+```mermaid caption="Lo que deja cada ejecución. Los artefactos caros se guardan en caché bajo el hash de la configuración que los produjo, y cada ejecución anota lo suficiente para rastrear una cifra de la memoria hasta el código que la produjo."
+flowchart LR
+  cfg["YAML del experimento<br/>más overrides -o"] --> hash["Hash de la configuración"]
+  hash --> cache[("Caché<br/>features, embeddings")]
+  cfg --> run["musicsim run"]
+  cache --> run
+  run --> metrics["metrics/*.csv<br/>grafos, figuras"]
+  run --> prov["run.json<br/>commit, árbol sucio,<br/>versiones, semilla, tiempos"]
+```
+
+## Decisiones de diseño
+
+### Tratar el género como un proxy, y poner a prueba el proxy
+
+El género es la única etiqueta que cubre todo FMA, así que es la definición de "parecido" por defecto. Pero mide otra cosa: cómo decidió llamar el artista a la pista. Un estudio de la verdad de referencia disponible encontró que los únicos juicios humanos de similitud públicos son las tripletas de TagATune que vienen con MagnaTagATune: 860 restricciones consistentes sobre 993 clips. En esas tripletas, las etiquetas de género separan a los dos candidatos solo en el 12 % de las restricciones, pero cuando lo hacen coinciden con el voto humano el 90 % de las veces.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  MARBLE, el benchmark de referencia para representaciones musicales, que no tiene ninguna tarea de similitud ni de recuperación. MTG-Jamendo, cuyo split de test ocupa por sí solo unos 166 GB.
+
+  </div>
+  <div slot="cost">
+
+  Un segundo corpus que solo sirve para evaluar, y un conjunto humano demasiado pequeño para entrenar. Toda conclusión obtenida con el género tiene que contrastarse con él antes de darla por buena.
+
+  </div>
+</Tradeoffs>
+
+### Evaluar con artistas que ningún modelo ha visto
+
+Los splits no comparten artistas, y la galería principal se limita a las unas 800 pistas de test. Las pistas de un mismo artista se parecen por razones que no tienen nada que ver con el género, así que un modelo que ha visto a un artista durante el entrenamiento puede recuperar sus otras pistas sin haber aprendido nada general.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Evaluar sobre las 7.994 pistas, como hacía el pipeline anterior, ya archivado.
+
+  </div>
+  <div slot="cost">
+
+  Una galería mucho más pequeña e intervalos más anchos. La galería completa se mantiene como análisis secundario, para poder reproducir y comparar las cifras archivadas.
+
+  </div>
+</Tradeoffs>
+
+### Un bootstrap pareado y agrupado por artista
+
+Los intervalos de confianza salen de remuestrear artistas enteros, no consultas sueltas, porque las pistas de un mismo artista no son observaciones independientes. Comparar dos representaciones remuestrea los mismos artistas para ambas, lo que hace que la comparación sea pareada. La corrección de Holm controla la tasa de error entre todas las comparaciones de una tabla.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Un bootstrap sobre consultas sueltas, o un test t por métrica. Los dos son más sencillos, y los dos subestimarían la incertidumbre.
+
+  </div>
+  <div slot="cost">
+
+  Intervalos más anchos, y semillas que hay que pasar a todas las funciones de remuestreo para que dos llamadas extraigan exactamente los mismos índices.
+
+  </div>
+</Tradeoffs>
+
+### Elegir la capa de MERT en validación, una sola vez
+
+MERT tiene 13 estados ocultos, y el mejor para la similitud no tiene por qué ser el último. La capa se elige una vez, por Recall@10 sobre el split de validación, y después queda fija en la configuración. Gana la capa 6, con 0,0548, y la curva entre capas es más o menos unimodal: más baja en los extremos de la pila y más alta en el centro.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Usar la última capa, o quedarse con la que mejor puntúa en test. La primera es una opción por defecto habitual que esta curva desaconseja; la segunda mete el test en el resultado.
+
+  </div>
+  <div slot="cost">
+
+  Seis pasadas por pista, a unos 4 segundos cada pista en CPU: unas 9 horas para el corpus completo. La comparación completa con MERT espera a tener ese tiempo o una GPU.
+
+  </div>
+</Tradeoffs>
+
+### Ficheros de configuración en lugar de notebooks
+
+Un experimento es un fichero YAML, y cualquier valor se puede sobrescribir desde la línea de comandos sin editarlo. Un fichero de configuración solo se añade cuando ya existe la etapa que lo ejecuta, así que el repositorio nunca lista un experimento que no funcione. Una etapa que todavía no está implementada se detiene con un mensaje claro.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Notebooks, que son más rápidos para explorar y más difíciles de volver a ejecutar exactamente igual.
+
+  </div>
+  <div slot="cost">
+
+  Más infraestructura antes del primer resultado: registros, un log de ejecuciones, una caché y una CLI, todos con sus propios tests.
+
+  </div>
+</Tradeoffs>
+
+## Lo que todavía no hace
+
+- **Todavía no hay redes siamesas.** Son la tercera etapa del plan, después de las líneas base y del análisis de los grafos.
+- **Los juicios humanos no están conectados.** La descarga y la evaluación de MagnaTagATune siguen pendientes, así que todas las cifras hasta ahora usan el género como proxy.
+- **La comparación con MERT no se ha ejecutado sobre el corpus completo.** El extractor y su configuración están listos, y la selección de capa se ejecutó con datos reales de validación.
+- **La estructura de los grafos, las pertenencias difusas y la predicción de enlaces vienen después.** La red neuronal de grafos queda aplazada hasta que la etapa de comparación sea reproducible.

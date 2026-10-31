@@ -1,0 +1,158 @@
+---
+updatedDate: '2026-10-31'
+diagramCaption: 'Hay dos caminos que llegan a las bases de datos del cliente. Construir el mapa solo lee los catálogos del sistema. Mover datos solo ocurre cuando el usuario lanza una migración, y entonces dentro de una única transacción que un dry run deshace.'
+diagram: |
+  flowchart TB
+    spa["SPA en React<br/>mapeo en grafo"]
+    subgraph backend["Backend en FastAPI"]
+      direction LR
+      intro["Introspección<br/>catálogos, sin filas"]
+      deps["Grafo de claves foráneas<br/>orden de dependencias"]
+      gen["Generador de scripts<br/>INSERT ... SELECT"]
+      run["Ejecutor<br/>una transacción"]
+      intro --> deps --> gen --> run
+    end
+    subgraph own["Almacenamiento propio"]
+      direction TB
+      pg[("PostgreSQL<br/>credenciales cifradas<br/>y caché de esquemas")]
+      redis[("Redis<br/>clave derivada, sesión de 3 h")]
+    end
+    subgraph customer["BBDD del cliente"]
+      direction TB
+      src[("Origen<br/>PostgreSQL, MySQL,<br/>SQL Server, Oracle")]
+      dst[("Destino")]
+    end
+    spa -- "cookie HttpOnly, CSRF" --> backend
+    backend --> own
+    backend -- "TLS verificado,<br/>solo hosts públicos" --> customer
+---
+
+Una herramienta web para planificar migraciones entre bases de datos relacionales. Lee los esquemas de un origen y un destino, permite mapear tablas y columnas de uno a otro en un grafo y genera el SQL que mueve los datos. También puede ejecutar ese SQL contra el destino si se lo pides.
+
+Para hacer cualquiera de esas cosas necesita cadenas de conexión de bases de datos que no son suyas, así que la mayor parte del diseño trata de qué guarda la herramienta, durante cuánto tiempo y qué se niega a tocar. Esa parte la cuento en [Custodiar la cadena de conexión de otra persona](/es/2026-03-08-encrypted-database-connectors/).
+
+## Cómo funciona
+
+1. **Conectar.** El usuario introduce una conexión y una frase de paso. Las credenciales se cifran con AES-256-GCM bajo una clave derivada de la frase de paso con Argon2id (64 MiB, 3 iteraciones). La base de datos guarda el texto cifrado, el nonce y la sal; la clave derivada solo vive en una sesión de Redis que caduca a las tres horas.
+2. **Inspeccionar.** Un adaptador por motor lee tablas, columnas, claves primarias y claves foráneas de `information_schema` y de los catálogos del sistema. En este camino nada ejecuta un `SELECT` sobre una tabla del usuario. La caché de esquemas también se cifra en reposo, porque nombres de tabla como `patients` o `salary_bands` describen un negocio.
+3. **Mapear.** Tablas y columnas se enlazan del origen al destino en una interfaz de grafo. Una columna puede llevar una transformación como `UPPER(TRIM({column}))`, que se valida como una única expresión SQL: sin terminadores de sentencia, sin comentarios, con comillas y paréntesis equilibrados. Varias personas pueden trabajar a la vez en un proyecto, con bloqueos por columna, comentarios e historial de versiones.
+4. **Generar.** Cada tabla de destino recibe una sentencia `INSERT INTO ... SELECT`. Cuando origen y destino son bases de datos distintas, el plan pasa a ser una copia: un `SELECT` en streaming dentro de una transacción de solo lectura en el origen, e `INSERT` parametrizados en lotes de 10.000 filas en el destino, con un `CAST` a un tipo validado allí donde los tipos de columna no coinciden.
+5. **Ejecutar, si se pide.** El ejecutor aplica el script dentro de una transacción. Un fallo lo deshace todo, y un dry run ejecuta el script entero y después lo deshace a propósito.
+
+## Decisiones de diseño
+
+### Construir el mapa desde los catálogos, nunca desde las filas
+
+Para mapear hace falta el esquema y nada más. Mantener la lectura de filas fuera de ese camino permite enunciar el límite con exactitud: la herramienta nunca lee tus datos para construir el mapa, y solo toca filas durante una migración que lanzas tú.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Muestrear filas para sugerir tipos y transformaciones. Daría mejores sugerencias, pero metería datos del usuario en el camino que más se usa de la herramienta.
+
+  </div>
+  <div slot="cost">
+
+  Cada motor necesita sus propias consultas de catálogo, y las sugerencias de tipo solo pueden usar los tipos declarados, no cómo son de verdad los datos.
+
+  </div>
+</Tradeoffs>
+
+### Derivar la clave de una frase de paso y guardarla durante una sesión
+
+Las cadenas de conexión tienen que poder descifrarse mientras alguien está trabajando, así que la clave no se puede tirar. Tampoco toca nunca la base de datos: se deriva bajo demanda y se guarda en una sesión de Redis acotada al proyecto, que se comprueba contra el usuario autenticado en cada petición y se borra al caducar.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Derivar en el navegador, como hace mi gestor de contraseñas. Aquí no encaja, porque es el servidor el que tiene que abrir la conexión. La otra opción era un KMS con cifrado de sobre, que traslada la confianza de la frase de paso del usuario al proveedor de nube y su política de IAM.
+
+  </div>
+  <div slot="cost">
+
+  Durante una sesión activa, el servidor puede descifrar las credenciales. Cada sesión empieza con un paso de desbloqueo que es lento a propósito, y nada puede reconectar en nombre del usuario fuera de una sesión, lo que descarta funciones como comparar esquemas de forma programada.
+
+  </div>
+</Tradeoffs>
+
+### Rechazar por defecto las conexiones a direcciones privadas
+
+Una herramienta que se conecta adonde le pida el usuario es una primitiva de server-side request forgery. Por defecto, un conector solo acepta hosts que resuelven a direcciones IP públicas. Los rangos internos hay que permitirlos de forma explícita, y la comprobación se repite cada vez que se crea un adaptador, no solo al abrir la sesión.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Permitir cualquier host y confiar en la red que rodea al despliegue. Sirve para un único cliente, pero no para una herramienta alojada que vive al lado de su propia base de datos y de su Redis.
+
+  </div>
+  <div slot="cost">
+
+  Los despliegues on-premise necesitan configurar `DB_CONNECTOR_ALLOWED_NETWORKS` antes de poder llegar a nada. Repetir la comprobación estrecha la ventana de DNS rebinding, pero no la cierra.
+
+  </div>
+</Tradeoffs>
+
+### Verificar TLS, y hacer visible cuando no se verifica
+
+Todos los conectores exigen TLS con verificación del certificado, y cada conexión puede subir su propia CA. Se puede desactivar la verificación en una conexión concreta, pero hay que escribir el hostname para confirmarlo, y la conexión queda marcada como no verificada en la interfaz.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  No dejar ninguna forma de desactivarla. Quien tuviera un certificado autofirmado en preproducción se llevaría sus credenciales a una herramienta que no comprueba nada.
+
+  </div>
+  <div slot="cost">
+
+  El camino inseguro existe, y depende de que el usuario lea la etiqueta.
+
+  </div>
+</Tradeoffs>
+
+### Ordenar las tablas por sus claves foráneas, y parar ante los ciclos
+
+Una tabla tiene que llenarse después de las tablas a las que referencia. El servicio de dependencias construye un grafo dirigido a partir de las claves foráneas del destino y lo ordena con el algoritmo de Kahn. Si el grafo tiene un ciclo, lanza un error que nombra las tablas del ciclo en lugar de inventarse un orden. Las autorreferencias se quedan fuera del grafo y se tratan aparte.
+
+```mermaid caption="Una arista va de la tabla referenciada a la que la referencia. orders tiene que esperar a customers y a products; employees se referencia a sí misma, así que nunca bloquea su propio turno."
+flowchart LR
+  countries --> customers --> orders --> order_items
+  products --> orders
+  products --> order_items
+  employees --> employees
+```
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Desactivar las comprobaciones de claves foráneas durante la carga, con `FOREIGN_KEY_CHECKS=0` o `session_replication_role`. Es más sencillo, pero cambia en cada motor y puede dejar filas que apuntan a ninguna parte.
+
+  </div>
+  <div slot="cost">
+
+  Un esquema con un ciclo real no se puede migrar de forma automática; alguien tiene que romperlo a mano.
+
+  </div>
+</Tradeoffs>
+
+### Una transacción en lugar de una copia de seguridad
+
+Una versión anterior hacía una copia de seguridad antes de lanzar una migración. Esa copia volcaba a disco, sin cifrar, tablas de la propia base de datos de DataMap, de todos los proyectos. No protegía el destino y exponía datos de otros clientes, así que se eliminó. Ahora la única protección es la transacción: o se aplica el script entero, o no se aplica nada.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Una copia de seguridad de las tablas de destino. Hecha bien, supondría escribir los datos del cliente en nuestro disco, que es justo lo que el resto del diseño evita.
+
+  </div>
+  <div slot="cost">
+
+  Una migración grande mantiene abierta una transacción larga en el destino. Una vez confirmada, no hay nada desde lo que restaurar.
+
+  </div>
+</Tradeoffs>
+
+## Lo que todavía no hace
+
+- **Los scripts generados todavía no usan el orden de dependencias.** El endpoint del grafo de dependencias lee las claves foráneas reales del destino e indica el orden y los ciclos. El generador de scripts, en cambio, construye su esquema solo a partir de los mappings, que no llevan claves foráneas, así que las tablas salen en el orden de los mappings y un ciclo no produce ningún error.
+- **Algunos metadatos van en claro.** El número de filas y el tamaño en bytes se guardan sin cifrar porque la interfaz ordena por ellos, igual que las fechas de conexión.
+- **El cifrado en reposo protege un disco o un volcado robados, no un proceso en marcha.** Mientras hay una sesión activa, el backend tiene las credenciales descifradas, por diseño.

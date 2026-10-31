@@ -1,0 +1,153 @@
+---
+updatedDate: '2026-10-31'
+diagramCaption: 'El juego y el núcleo de entrenamiento solo conocen dos interfaces: Brain, que convierte cuatro entradas en una decisión de saltar, y EvolvingPopulation, que cría la siguiente generación. Cambiar entre el GA y NEAT es un desplegable, no un cambio de código, y nada por debajo de los puntos de entrada sabe que JavaFX existe.'
+diagram: |
+  flowchart TB
+    subgraph entry["Dos puntos de entrada"]
+      ui["Interfaz JavaFX<br/>gráficas, visualizador"]
+      cli["CLI sin interfaz<br/>CSV por generación"]
+    end
+    engine["TrainingEngine<br/>dueño de la semilla, sin JavaFX"]
+    subgraph evo["EvolvingPopulation"]
+      ga["GA de topología fija<br/>16 operadores intercambiables"]
+      neat["NEAT<br/>especies, innovaciones"]
+    end
+    game["FlappyBirdGame<br/>una copia por agente"]
+    subgraph brain["Brain: feedForward(double[])"]
+      mlp["MLP 4-8-1"]
+      genome["Genoma NEAT"]
+    end
+    champ[("Campeón en JSON<br/>versionado, con procedencia")]
+    ui --> engine
+    cli --> engine
+    engine --> evo
+    engine --> game
+    evo --> brain
+    game --> brain
+    brain -.-> champ
+---
+
+Un laboratorio de neuroevolución en Java sin librerías de ML. Cincuenta pájaros, cada uno controlado por su propia red neuronal, aprenden a jugar a Flappy Bird solo por selección, sin datos de entrenamiento. Las redes, los dos motores de evolución y todos los operadores genéticos están escritos a mano.
+
+Hay dos motores. Un algoritmo genético clásico evoluciona los pesos de una red fija, y una implementación completa de [NEAT](https://nn.cs.utexas.edu/downloads/papers/stanley.ec02.pdf) evoluciona también la estructura. La pregunta que responde el proyecto es si merece la pena evolucionar la estructura, medido con el cuidado suficiente para fiarse de la respuesta.
+
+## Cómo funciona
+
+En cada fotograma, el cerebro de cada pájaro recibe cuatro entradas normalizadas: su altura, su velocidad vertical, la distancia a la siguiente tubería y la altura del hueco de esa tubería. Una salida por encima de 0,5 significa saltar. El fitness es el número de fotogramas que sobrevive el pájaro, y un pájaro que llega al tope de 20.000 fotogramas ha resuelto el juego.
+
+1. **Jugar.** Los pájaros no interactúan entre sí, así que cada uno juega su propia copia del juego sobre la misma secuencia de tuberías, en paralelo en todos los núcleos.
+2. **Evolucionar con el GA.** Cada cerebro es un perceptrón 4 → 8 → 1 y solo cambian sus pesos. El fitness se escala, se seleccionan los padres y los pesos se cruzan y mutan; cada paso se elige en tiempo de ejecución entre 16 operadores.
+3. **O evolucionar con NEAT.** Cada cerebro empieza con las entradas conectadas directamente a la salida y va ganando nodos ocultos y conexiones por mutación. Un registro de innovaciones compartido da el mismo número al mismo cambio estructural en todos los genomas. Esos números alinean los genes en el cruce y sirven para medir la distancia con la que la población se divide en especies, lo que protege las estructuras nuevas mientras sus pesos se ajustan.
+4. **Guardar al mejor.** Un agente entrenado se guarda como JSON versionado, con la semilla, la generación y el commit que lo produjeron, y se puede volver a ver desde la línea de comandos o desde la interfaz. Los instaladores se abren con un campeón de NEAT ya jugando.
+
+```mermaid caption="Una generación. Todo lo aleatorio sale de una sola semilla global: las tuberías de la generación g, de una semilla derivada de ella; la evolución, de su propio generador. El juego va en paralelo; todo lo que decide quién se reproduce se ejecuta después, en el orden de los agentes."
+flowchart TB
+  seed["Semilla global"] --> pipes["Semilla de tuberías de la generación g<br/>mezcla de la semilla y g"]
+  seed --> rng["Generador de la evolución"]
+  pipes --> play
+  subgraph play["Juego: ForkJoinPool, una tarea por agente"]
+    direction LR
+    a1["Agente 1<br/>su cerebro, su juego"]
+    a2["Agente 2<br/>su cerebro, su juego"]
+    an["Agente 50<br/>su cerebro, su juego"]
+  end
+  play --> fit["Fitness, fotogramas vividos<br/>leído en orden de agente"]
+  fit --> breed["Seleccionar, cruzar, mutar<br/>secuencial"]
+  rng --> breed
+  breed -- "siguiente generación" --> play
+```
+
+## Decisiones de diseño
+
+### El juego solo conoce un Brain
+
+`FlappyBirdGame` y los agentes solo dependen de `Brain`, un único método que convierte un array de entradas en una salida. El núcleo de entrenamiento solo depende de `EvolvingPopulation`. La red fija y el genoma de NEAT son dos implementaciones de la primera interfaz, y el GA y NEAT, dos implementaciones de la segunda.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Dos aplicaciones separadas, una por motor. Al principio es más sencillo, pero la comparación arrastraría siempre la duda de si los juegos o los bucles son distintos.
+
+  </div>
+  <div slot="cost">
+
+  Las interfaces tienen que valer para los dos motores, así que todo lo que es propio de uno es opcional allí donde se informa. En el CSV, las especies y el número de nodos de NEAT quedan vacíos para el GA.
+
+  </div>
+</Tradeoffs>
+
+### Una sola semilla lo decide todo
+
+`TrainingEngine` es dueño de una semilla global, y ninguna otra parte del código crea su propio generador aleatorio. Las poblaciones y las redes reciben el generador, y los operadores lo reciben como argumento de la llamada en lugar de guardarlo. Las tuberías salen de una semilla derivada de la global y del número de generación, así que todos los agentes juegan el mismo recorrido, y el GA y NEAT se enfrentan a las mismas tuberías con la misma semilla. Las repeticiones usan también generadores derivados, de modo que ver una nunca altera el entrenamiento.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Un `Random` por componente. Es lo habitual, y hace imposible reproducir una ejecución en cuanto algo se evalúa en paralelo.
+
+  </div>
+  <div slot="cost">
+
+  Cualquier código nuevo que necesite aleatoriedad tiene que recibir el generador desde fuera, y añadir una extracción aleatoria en cualquier sitio cambia todos los resultados posteriores.
+
+  </div>
+</Tradeoffs>
+
+### En paralelo, y aun así determinista bit a bit
+
+Los agentes de una generación corren en un `ForkJoinPool` con hilos de plataforma, porque el trabajo es intensivo en CPU. Cada agente, su cerebro y su juego pertenecen a una única tarea. Las estadísticas, la selección y la reproducción se ejecutan después de forma secuencial, en el orden de los agentes. Los tests comprueban que 1, 2, 4 y 8 hilos dan resultados idénticos con los dos motores.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Un único juego compartido por el que avanzan todos los pájaros a la vez. La vista en pantalla sigue funcionando así, y un test comprueba que produce la misma generación que la ejecución en paralelo.
+
+  </div>
+  <div slot="cost">
+
+  La parte secuencial limita la aceleración. Con 500 agentes, el GA solo llega a 1,7× en 4 núcleos, porque una red fija es barata de evaluar y la reproducción domina cada generación.
+
+  </div>
+</Tradeoffs>
+
+### Un núcleo de entrenamiento sin JavaFX
+
+`Main` elige entre la línea de comandos y la interfaz antes de cargar ninguna clase de JavaFX. La CLI maneja `TrainingEngine` directamente y escribe una fila de CSV por generación. Un test ejecuta la CLI en un class loader aislado y falla si se pide cualquier clase `javafx.*`.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Entrenar a través del controlador de la interfaz, para tener un único punto de entrada.
+
+  </div>
+  <div slot="cost">
+
+  Una capa más: `SimulationController` solo existe para adaptar el motor a las propiedades, las gráficas y el historial de la interfaz.
+
+  </div>
+</Tradeoffs>
+
+### Un estudio pareado en lugar de una buena ejecución
+
+NEAT y cuatro configuraciones del GA corrieron con las mismas 30 semillas durante 200 generaciones cada una. Las tasas de éxito llevan intervalos de Wilson y se comparan con el test de McNemar sobre los resultados pareados. Las generaciones hasta resolver se comparan con Mann-Whitney, con la δ de Cliff como tamaño del efecto y la corrección de Holm entre comparaciones.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Comparar la mejor ejecución de cada motor, que es lo que enseñan la mayoría de artículos.
+
+  </div>
+  <div slot="cost">
+
+  Treinta ejecuciones por configuración, y resultados menos rotundos que una sola gráfica. NEAT resuelve 26 de 30 semillas frente a 20 del mejor GA, y las resuelve antes, pero en tasa de éxito la diferencia con el GA de torneo no es significativa (p ajustado de 0,109).
+
+  </div>
+</Tradeoffs>
+
+El estudio también encontró errores. Las especies de NEAT se fundían en una sola y dejaban de proteger las estructuras nuevas. Un umbral de compatibilidad dinámico y la eliminación de especies estancadas llevaron a NEAT de 19 a 26 semillas resueltas. Dos operadores de selección del GA nunca elegían a los peores agentes como padres, y una revisión antes de la versión 2.0.0 corrigió otros cuatro.
+
+## Lo que todavía no hace
+
+- **Los campeones del GA se sobreajustan a sus tuberías de entrenamiento.** El fitness se mide sobre una sola secuencia de tuberías por generación. Con 100 secuencias nuevas, los dos campeones de NEAT sobrevivieron a 94 y a 100, y los cinco del GA, a entre 0 y 100. Siete campeones son una anécdota, y el siguiente paso es evaluar con varias secuencias durante el entrenamiento.
+- **Los instaladores no están firmados.** El primer arranque muestra un aviso de SmartScreen o de Gatekeeper.
+- **La interfaz está en español.** El README y la línea de comandos están en inglés.
