@@ -1,0 +1,158 @@
+---
+updatedDate: '2026-10-31'
+diagramCaption: 'Two paths reach the customer''s databases. Building the map reads only the system catalogs. Moving data happens only when the user runs a migration, and then inside a single transaction that a dry run rolls back.'
+diagram: |
+  flowchart TB
+    spa["React SPA<br/>graph mapping UI"]
+    subgraph backend["FastAPI backend"]
+      direction LR
+      intro["Introspection<br/>catalogs, no rows"]
+      deps["Foreign-key graph<br/>dependency order"]
+      gen["Script generator<br/>INSERT ... SELECT"]
+      run["Executor<br/>one transaction"]
+      intro --> deps --> gen --> run
+    end
+    subgraph own["DataMap's own storage"]
+      direction TB
+      pg[("PostgreSQL<br/>encrypted credentials<br/>and schema cache")]
+      redis[("Redis<br/>derived key, 3 h session")]
+    end
+    subgraph customer["Customer databases"]
+      direction TB
+      src[("Source<br/>PostgreSQL, MySQL,<br/>SQL Server, Oracle")]
+      dst[("Target")]
+    end
+    spa -- "HttpOnly cookie, CSRF" --> backend
+    backend --> own
+    backend -- "TLS verified,<br/>public hosts only" --> customer
+---
+
+A web tool for planning migrations between relational databases. It reads the schemas of a source and a target, lets you map tables and columns from one to the other in a graph, and generates the SQL that moves the data. It can also run that SQL against the target if you ask it to.
+
+To do any of that it needs connection strings for databases it does not own, so most of the design is about what the tool holds, for how long, and what it refuses to touch. That side is explained in [Holding someone else's connection string](/2026-03-08-encrypted-database-connectors/).
+
+## How it works
+
+1. **Connect.** The user enters a connection and a passphrase. Credentials are encrypted with AES-256-GCM under a key derived from the passphrase with Argon2id (64 MiB, 3 iterations). The database stores the ciphertext, the nonce and the salt; the derived key lives only in a Redis session that expires after three hours.
+2. **Introspect.** One adapter per engine reads tables, columns, primary keys and foreign keys from `information_schema` and the system catalogs. Nothing on this path runs a `SELECT` against a user table. The cached schema is encrypted at rest as well, because table names like `patients` or `salary_bands` describe a business.
+3. **Map.** Tables and columns are linked from source to target in a graph UI. A column can carry a transformation such as `UPPER(TRIM({column}))`, which is validated as a single SQL expression: no statement terminators, no comments, balanced quotes and parentheses. Several people can work on a project at once, with locks per column, comments and version history.
+4. **Generate.** Each target table gets an `INSERT INTO ... SELECT` statement. When source and target are different databases, the plan becomes a copy instead: a streaming `SELECT` in a read-only transaction on the source, and parameterised `INSERT` batches of 10,000 rows on the target, with a `CAST` to a validated type wherever the column types differ.
+5. **Run, if asked.** The executor applies the script inside one transaction. A failure rolls everything back, and a dry run executes the whole script and then rolls back on purpose.
+
+## Design decisions
+
+### Build the map from the catalogs, never from rows
+
+Mapping needs the schema and nothing else. Keeping row reads out of that path means the boundary can be stated exactly: the tool never reads your data to build the map, and only touches rows during a migration you start.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Sampling rows to suggest types and transformations. It would make better suggestions, but it would put user data in the most frequently used path of the tool.
+
+  </div>
+  <div slot="cost">
+
+  Each engine needs its own catalog queries, and type suggestions can only use declared types, not what the data actually looks like.
+
+  </div>
+</Tradeoffs>
+
+### Derive the key from a passphrase and hold it for one session
+
+Connection strings have to be decryptable for as long as someone is working, so the key cannot be thrown away. It also never touches the database: it is derived on demand and cached in a Redis session that is scoped per project, checked against the authenticated user on every request and deleted when it expires.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Deriving in the browser, as my password manager does. It doesn't fit here, because the server has to open the connection itself. The other option was a KMS with envelope encryption, which moves trust from the user's passphrase to the cloud provider and its IAM policy.
+
+  </div>
+  <div slot="cost">
+
+  During an active session the server can decrypt the credentials. Every session starts with an unlock step that is slow on purpose, and nothing can reconnect on the user's behalf outside a session, so features like scheduled schema diffs are ruled out.
+
+  </div>
+</Tradeoffs>
+
+### Refuse connections to private addresses by default
+
+A tool that connects wherever the user asks is a server-side request forgery primitive. By default a connector only accepts hosts that resolve to public IP addresses. Internal ranges have to be allowed explicitly, and the check runs again every time an adapter is created, not only when the session starts.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Allowing any host and relying on the network around the deployment. That works for a single tenant, but not for a hosted tool that sits next to its own database and Redis.
+
+  </div>
+  <div slot="cost">
+
+  On-premise deployments need `DB_CONNECTOR_ALLOWED_NETWORKS` configured before they can reach anything. Repeating the check narrows the DNS rebinding window but does not close it.
+
+  </div>
+</Tradeoffs>
+
+### Verify TLS, and make skipping it visible
+
+Every connector requires TLS with certificate verification, and each connection can upload its own CA. Turning verification off is possible for a single connection, but it requires typing the hostname to confirm, and the connection stays marked as unverified in the UI.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Having no opt-out at all. People with a self-signed staging certificate would take their credentials to a tool that simply doesn't check.
+
+  </div>
+  <div slot="cost">
+
+  The insecure path exists and depends on the user reading the label.
+
+  </div>
+</Tradeoffs>
+
+### Order tables by their foreign keys, and stop at cycles
+
+A table has to be filled after the tables it references. The dependency service builds a directed graph from the target's foreign keys and sorts it with Kahn's algorithm. If the graph contains a cycle, it raises an error that names the tables in the cycle instead of guessing an order. Self-references are kept out of the graph and handled separately.
+
+```mermaid caption="An edge points from the referenced table to the one that references it. orders has to wait for customers and products; employees refers to itself, so it never blocks its own turn."
+flowchart LR
+  countries --> customers --> orders --> order_items
+  products --> orders
+  products --> order_items
+  employees --> employees
+```
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Turning off foreign-key checks during the load, with `FOREIGN_KEY_CHECKS=0` or `session_replication_role`. It is simpler, but it is different on every engine and can leave rows that point nowhere.
+
+  </div>
+  <div slot="cost">
+
+  A schema with a real cycle cannot be migrated automatically; someone has to break it by hand.
+
+  </div>
+</Tradeoffs>
+
+### One transaction instead of a backup
+
+An earlier version backed up before running a migration. That backup dumped tables from DataMap's own database, from every project, to disk without encryption. It did not protect the target and it exposed other customers' data, so it was removed. Now the only protection is the transaction: either the whole script applies, or none of it does.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  A backup of the target tables. Done properly, it would mean writing the customer's data to our disk, which is exactly what the rest of the design avoids.
+
+  </div>
+  <div slot="cost">
+
+  A large migration holds one long transaction on the target. Once it commits, there is nothing to restore from.
+
+  </div>
+</Tradeoffs>
+
+## What it doesn't do yet
+
+- **Generated scripts don't use the dependency order yet.** The dependency graph endpoint reads the real foreign keys from the target and reports the order and any cycles. The script generator, however, builds its schema from the mappings alone, which carry no foreign keys, so tables come out in mapping order and a cycle produces no error.
+- **Some metadata is in plaintext.** Row counts and byte sizes are stored unencrypted because the UI sorts on them, and so are connection timestamps.
+- **Encryption at rest protects a stolen disk or dump, not a running process.** While a session is active, the backend holds decrypted credentials by design.
