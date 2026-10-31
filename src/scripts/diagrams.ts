@@ -65,17 +65,29 @@ if (canvases.length) {
 	async function render(canvas: HTMLElement) {
 		mermaid ??= (await import('mermaid')).default;
 		configure(mermaid);
-		// A left-to-right flowchart is unreadable on a phone: stack it instead.
+		// A left-to-right flowchart is unreadable on a phone: stack it, and
+		// any left-to-right subgraph inside it, top to bottom instead.
 		let source = canvas.dataset.source ?? '';
 		if (canvas.clientWidth < 640) {
-			source = source.replace(/^(\s*flowchart\s+)LR\b/, '$1TB');
+			source = source
+				.replace(/^(\s*flowchart\s+)LR\b/, '$1TB')
+				.replace(/^(\s*direction\s+)LR\b/gm, '$1TB');
 		}
 		try {
 			const { svg } = await mermaid.render(`diagram-${++counter}`, source);
 			canvas.innerHTML = svg;
 			canvas.classList.add('is-rendered');
-			canvas.classList.toggle('is-flowchart', /^\s*flowchart\b/.test(source));
 			const svgEl = canvas.querySelector('svg');
+			// Scaling a flowchart down to fit is fine until the labels stop
+			// being readable; past 60% it keeps its size and scrolls instead,
+			// starting from the middle, where the main path usually runs.
+			const padding = parseFloat(getComputedStyle(canvas).paddingLeft) * 2;
+			const natural = parseFloat(svgEl?.getAttribute('width') ?? '0');
+			canvas.classList.toggle(
+				'can-shrink',
+				/^\s*flowchart\b/.test(source) && natural * 0.6 <= canvas.clientWidth - padding
+			);
+			canvas.scrollLeft = (canvas.scrollWidth - canvas.clientWidth) / 2;
 			svgEl?.setAttribute('role', 'img');
 			if (canvas.getAttribute('aria-label')) {
 				svgEl?.setAttribute('aria-label', canvas.getAttribute('aria-label')!);

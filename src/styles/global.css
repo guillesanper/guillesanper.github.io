@@ -131,13 +131,14 @@
 		@apply mx-auto h-auto max-w-none shrink-0;
 	}
 	@media (max-width: 639px) {
-		/* On a phone a stacked flowchart is only slightly too wide: scale it
-		   to fit rather than hide half of it behind a sideways scroll. Sequence
-		   diagrams can't stack, so they keep their size and scroll. */
+		/* On a phone a stacked flowchart is often only slightly too wide: scale
+		   it to fit rather than hide part of it behind a sideways scroll. Anything
+		   that would shrink below a readable size (diagrams.ts decides) keeps its
+		   size and scrolls, and so do sequence diagrams, which can't stack. */
 		.diagram-canvas {
 			@apply px-3;
 		}
-		.diagram-canvas.is-flowchart > svg {
+		.diagram-canvas.can-shrink > svg {
 			@apply max-w-full shrink;
 		}
 	}

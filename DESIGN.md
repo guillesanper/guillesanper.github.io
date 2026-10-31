@@ -42,8 +42,9 @@ Technology pills are the one exception: each uses its brand color (`TechPill.ast
   stretched link on the title. The article and repository links sit above it.
 - **Diagram** (`Diagram.astro` and ```` ```mermaid ```` fences): the lead diagram is the one
   bold element on a project page, drawn on a dotted drafting surface. Below 640px,
-  left-to-right flowcharts stack top to bottom and scale to fit. Sequence diagrams keep their
-  size and scroll.
+  left-to-right flowcharts and subgraphs stack top to bottom, then scale to fit as long as that
+  keeps them at 60% or more of their size. Anything wider, and every sequence diagram, keeps
+  its size and scrolls sideways, starting from the middle.
 - **Tradeoffs** (`Tradeoffs.astro`): under each design decision, two columns, "Considered
   instead" and "What it costs", separated from the text by a hairline.
 - **Arrow link** (`.arrow-link`): secondary navigation; the arrow nudges toward where it goes.
