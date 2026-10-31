@@ -44,7 +44,9 @@ Technology pills are the one exception: each uses its brand color (`TechPill.ast
   bold element on a project page, drawn on a dotted drafting surface. Below 640px,
   left-to-right flowcharts and subgraphs stack top to bottom, then scale to fit as long as that
   keeps them at 60% or more of their size. Anything wider, and every sequence diagram, keeps
-  its size and scrolls sideways, starting from the middle.
+  its size and scrolls sideways, starting from the middle. Mermaid only applies a subgraph's
+  `direction` to nodes connected inside it, so siblings that should sit in a row are chained
+  with invisible links (`a ~~~ b ~~~ c`); that row then also stacks on a phone.
 - **Tradeoffs** (`Tradeoffs.astro`): under each design decision, two columns, "Considered
   instead" and "What it costs", separated from the text by a hairline.
 - **Arrow link** (`.arrow-link`): secondary navigation; the arrow nudges toward where it goes.
