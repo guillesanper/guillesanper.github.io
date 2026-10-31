@@ -1,0 +1,143 @@
+---
+updatedDate: '2026-10-31'
+diagramCaption: 'The whole thesis is one pipeline: audio, representation, similarity graph, evaluation. Solid boxes run today; dashed ones are later stages. Swapping a representation changes one box and nothing else, which is what makes the comparison fair.'
+diagram: |
+  flowchart TB
+    audio[("FMA small<br/>7,994 tracks, 8 genres")]
+    subgraph rep["Representations"]
+      direction LR
+      mfcc["MFCC<br/>80 dimensions"]
+      mert["MERT, layer 6<br/>frozen transformer"]
+      siam["Siamese networks<br/>contrastive and triplet"]
+      mfcc ~~~ mert ~~~ siam
+    end
+    knn["kNN similarity graph<br/>near-duplicates grouped"]
+    subgraph ev["Evaluation"]
+      direction LR
+      genre["Genre as a proxy<br/>Recall@K, MAP, nDCG@10"]
+      human["Human judgements<br/>MagnaTagATune triplets"]
+      genre ~~~ human
+    end
+    audio --> rep --> knn --> ev
+    classDef planned stroke-dasharray: 5 5
+    class siam,human planned
+---
+
+My bachelor's thesis, in progress, in a team of two. Music similarity has no operational definition: no public corpus annotates "sounds like", so the field measures it through proxies such as genre labels, listener tags and a few small sets of human judgements. The thesis asks whether differences between music representations translate into significant differences in the similarity graphs they produce.
+
+The main focus is Siamese networks trained on spectrograms, pretrained embeddings and acoustic descriptors. They will be compared with classical techniques, a CNN classifier and the pretrained MERT model. Most of the work so far has gone into making that comparison trustworthy before any of it is trained.
+
+## How it works
+
+Every experiment is one YAML file and one command, `musicsim run`. The pipeline is the same for every representation:
+
+1. **Index.** FMA small is downloaded with checksums and indexed. The indexer asserts the numbers everything else depends on: 7,994 usable tracks across 8 genres, and no artist shared between the training, validation and test splits.
+2. **Extract.** Audio becomes a cached log-mel spectrogram, then a representation. MERT gets each 30-second clip as six 5-second windows, because that is what it was pre-trained on, and all 13 of its hidden states are cached per track.
+3. **Build the graph.** Each track is linked to its nearest neighbours. Tracks whose cosine similarity is at least 0.9999, the same MP3 uploaded twice, are grouped as near-duplicates.
+4. **Evaluate.** Every track in the test split queries the others. A neighbour counts as relevant when it shares the query's genre, and graded relevance over FMA's genre hierarchy gives partial credit. Results are reported as Recall@K, MAP and nDCG@10 with bootstrap confidence intervals.
+
+The current reference, on the test split with near-duplicates removed: MFCC reaches a MAP of 0.240 and an nDCG@10 of 0.363, against 0.132 and 0.129 for random embeddings. Those figures are pinned by a regression test that runs against the real download, so a later change that moves them doesn't go unnoticed.
+
+```mermaid caption="What a run leaves behind. Expensive artefacts are cached under the hash of the configuration that produced them, and every run writes down enough to trace a number in the report back to the code."
+flowchart LR
+  cfg["Experiment YAML<br/>plus -o overrides"] --> hash["Config hash"]
+  hash --> cache[("Cache<br/>features, embeddings")]
+  cfg --> run["musicsim run"]
+  cache --> run
+  run --> metrics["metrics/*.csv<br/>graphs, figures"]
+  run --> prov["run.json<br/>commit, dirty tree,<br/>versions, seed, timings"]
+```
+
+## Design decisions
+
+### Treat genre as a proxy, and test the proxy
+
+Genre is the only label that covers all of FMA, so it is the default definition of "similar". But it measures something else: what the artist chose to call the track. A study of the available ground truth found that the only public human similarity judgements are the TagATune triplets shipped with MagnaTagATune: 860 consistent constraints over 993 clips. On those triplets, genre tags separate the two candidates in only 12% of the constraints, but when they do, they agree with the human vote 90% of the time.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  MARBLE, the standard benchmark for music representations, which has no similarity or retrieval task. MTG-Jamendo, whose test split alone is about 166 GB.
+
+  </div>
+  <div slot="cost">
+
+  A second corpus that is only used for evaluation, and a human set too small to train on. Every conclusion drawn on genre has to be checked against it before it counts.
+
+  </div>
+</Tradeoffs>
+
+### Evaluate on artists no model has seen
+
+The splits share no artist, and the main gallery is restricted to the roughly 800 test tracks. Tracks by the same artist sound alike for reasons that have nothing to do with genre, so a model that has seen an artist in training can retrieve their other tracks without learning anything general.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Evaluating over all 7,994 tracks, which is what the earlier, archived pipeline did.
+
+  </div>
+  <div slot="cost">
+
+  A much smaller gallery and wider intervals. The full gallery is kept as a secondary analysis, so the archived figures can still be reproduced and compared.
+
+  </div>
+</Tradeoffs>
+
+### A paired bootstrap, clustered by artist
+
+Confidence intervals come from resampling whole artists rather than individual queries, because tracks by the same artist are not independent observations. Comparing two representations resamples the same artists for both, which makes the comparison paired. Holm's correction controls the error rate across all the comparisons a table makes.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  A bootstrap over individual queries, or a t-test per metric. Both are simpler, and both would understate the uncertainty.
+
+  </div>
+  <div slot="cost">
+
+  Wider intervals, and seeds that have to be plumbed through every resampling function, so that two calls draw exactly the same indices.
+
+  </div>
+</Tradeoffs>
+
+### Choose MERT's layer on validation, once
+
+MERT has 13 hidden states, and the best one for similarity is not obviously the last. The layer is chosen once, by Recall@10 on the validation split, and then fixed in the configuration. Layer 6 wins with 0.0548, and the curve across layers is roughly unimodal: lowest at the edges of the stack, highest in the middle.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Using the last layer, or picking the layer that scores best on test. The first is a common default that this curve argues against; the second leaks the test set into the result.
+
+  </div>
+  <div slot="cost">
+
+  Six forward passes per track at about 4 seconds on a CPU: roughly 9 hours for the full corpus. The full MERT comparison is waiting for that time or for a GPU.
+
+  </div>
+</Tradeoffs>
+
+### Configuration files instead of notebooks
+
+An experiment is a YAML file, and any value can be overridden on the command line without editing it. A configuration file is only added once the stage that runs it exists, so the repository never lists an experiment that doesn't work. A stage that isn't implemented yet stops with a clear message.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Notebooks, which are faster for exploring and harder to rerun the same way twice.
+
+  </div>
+  <div slot="cost">
+
+  More framework before the first result: registries, a run log, a cache and a CLI, all with their own tests.
+
+  </div>
+</Tradeoffs>
+
+## What it doesn't do yet
+
+- **There are no Siamese networks yet.** They are the third stage of the plan, after the baselines and the graph analysis.
+- **The human judgements aren't wired in.** The MagnaTagATune download and evaluation are still pending, so every figure so far uses genre as the proxy.
+- **The MERT comparison hasn't run on the full corpus.** The extractor and its configuration are ready, and layer selection ran on real validation data.
+- **Graph structure, fuzzy memberships and link prediction come later.** The graph neural network is deferred until the comparison stage is reproducible.
