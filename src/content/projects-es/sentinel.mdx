@@ -1,0 +1,143 @@
+---
+updatedDate: '2026-10-31'
+diagramCaption: 'Los namespaces platform y ml parten de denegarlo todo, así que cada conexión que entra o sale de ellos la abre su propia network policy. La línea discontinua del volumen de modelos a la API es un paso que todavía no existe: el entrenamiento corre en el clúster, pero su resultado no llega a los pods que sirven.'
+diagram: |
+  flowchart TB
+    client["Cliente con un JWT"] --> ingress["ingress-nginx"]
+    subgraph platform["namespace: platform"]
+      api["sentinel-api<br/>FastAPI"]
+      events["Track de eventos<br/>Isolation Forest, XGBoost, reglas"]
+      flows["Track de flujos<br/>Isolation Forest y luego XGBoost"]
+      api --> events
+      api --> flows
+    end
+    subgraph ml["namespace: ml"]
+      jobs["CronJobs de<br/>entrenamiento"]
+      models[("sentinel-models<br/>volumen")]
+      jobs --> models
+    end
+    subgraph obs["namespace: observability"]
+      prom["Prometheus, Grafana,<br/>Alertmanager"]
+    end
+    ingress --> api
+    secrets["GCP Secret Manager"] -- "External Secrets" --> api
+    prom -. "lee /metrics" .-> api
+    models -. "aún sin paso de transferencia" .-> api
+---
+
+Una plataforma de detección de intrusiones que analiza dos tipos de datos en paralelo: eventos de log de la infraestructura y flujos de red. Cada uno tiene su propio modelo y sus propios endpoints. Todo corre en un clúster privado de GKE, definido con Terraform y desplegado con kustomize.
+
+El track de flujos es donde el proyecto pasó a tratar más de medir que de modelos. Partió de mi [trabajo anterior sobre CICIDS2017](/es/2025-11-10-intrusion-detection-cascade/), que daba 0,95 de F1-macro con un split aleatorio. Un split cronológico bajó esa cifra, y después resultó que el propio split cronológico medía lo que no era, dos veces. Esa historia está en [Tu split temporal probablemente mide otra cosa](/es/2026-08-10-temporal-split-measures-something-else/).
+
+## Cómo funciona
+
+Una petición llega a `sentinel-api` a través de ingress-nginx con un token JWT de tipo bearer. La API tiene dos rutas por track: `/v1/predict` y `/v1/analyze/batch` para eventos de log, y `/v1/predict/flow` y `/v1/analyze/flow/batch` para flujos de red. Los lotes tienen un máximo de 100 elementos.
+
+1. **Los eventos de log** pasan por tres detectores que puntúan todos los eventos: un Isolation Forest, un clasificador XGBoost y un conjunto de reglas. Una capa de fusión los promedia en una puntuación de amenaza, una severidad y un tipo de ataque. Se entrenan con un generador sintético y 25 features derivadas: ventanas temporales y agregados por campaña.
+2. **Los flujos de red** llevan las 78 features de CICFlowMeter y pasan por una cascada. La etapa 1 decide si el flujo es anómalo, y solo lo que marca llega a la etapa 2.
+3. **El entrenamiento** corre como CronJobs de Kubernetes en el namespace `ml`, con la misma imagen que la API. El job de flujos se publica suspendido, porque sus 844 MB de CSV de CICIDS2017 se dejan fuera de la imagen a propósito y el volumen de datos empieza vacío.
+
+```mermaid caption="La cascada de flujos. El umbral de la etapa 1 es un único punto de operación para las siete clases, así que su recall es el techo de todo el sistema: un flujo que deja pasar se responde como benigno y la etapa 2 nunca lo ve."
+flowchart TD
+  flow["Flujo de red<br/>78 features de CICFlowMeter"] --> s1["Etapa 1<br/>Isolation Forest,<br/>umbral F-beta, β=2"]
+  s1 -- "no anómalo" --> benign["BENIGN<br/>la etapa 2 nunca lo ve"]
+  s1 -- "anómalo" --> s2["Etapa 2<br/>XGBoost sobre 7 clases"]
+  s2 --> fusion["Fusión<br/>0,3 anomalía + 0,5 clasificador + 0,2 reglas"]
+  fusion --> out["puntuación, severidad,<br/>tipo de ataque, explicación"]
+```
+
+La infraestructura son seis módulos de Terraform: VPC, GKE, IAM, almacenamiento, seguridad y Kubernetes. Los nodos no tienen IP pública, los pods se autentican en GCP con Workload Identity en lugar de claves de cuenta de servicio, y los secretos llegan desde Secret Manager a través de External Secrets Operator. Los overlays de `dev` y `prod` se apoyan en una base común de kustomize.
+
+## Decisiones de diseño
+
+### Dos tracks que nunca comparten taxonomía
+
+Sobre el papel, eventos y flujos se parecen: los dos tienen siete clases, y `brute_force` aparece al lado de `BruteForce`. Pero las clases de eventos describen lo que un actor intenta hacer en un log de autenticación, y las de flujos, el patrón de tráfico que produce una herramienta. `DDoS` no tiene equivalente en un log de autenticación, y la escalada de privilegios no tiene firma en un flujo. Los dos tracks comparten el módulo de métricas y nada más.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Un único modelo y una única taxonomía para los dos. El peligro concreto era silencioso: el clasificador de eventos convierte las etiquetas desconocidas en `normal`, así que darle etiquetas de CICIDS entrena un modelo que responde `normal` a todo sin lanzar ni un error.
+
+  </div>
+  <div slot="cost">
+
+  Dos caminos de inferencia, dos directorios de artefactos y dos pares de endpoints que mantener. Un cliente que quiera un solo veredicto por host tiene que combinarlos él.
+
+  </div>
+</Tradeoffs>
+
+### Una cascada para los flujos, un ensemble para los eventos
+
+El track de flujos hereda la cascada de mi trabajo anterior. Una etapa 1 no supervisada puede marcar tráfico que no encaja con ninguna familia conocida, y el clasificador solo gasta tiempo en lo que ya es sospechoso. El umbral de la etapa 1 maximiza F-beta con β=2, que pesa más un ataque perdido que una falsa alarma, porque nada de lo que descarta la etapa 1 llega a la etapa 2.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  El mismo ensemble que el track de eventos, en el que todos los detectores puntúan todas las entradas y una capa de fusión los promedia.
+
+  </div>
+  <div slot="cost">
+
+  El recall de la etapa 1 se convierte en un techo duro. En la última medición temporal, el 44 % de los ataques se pierde en la etapa 1 y ninguna etapa 2 puede recuperarlos. Un único umbral para siete clases significa además que cualquier cosa que cambie la composición del conjunto de validación mueve todas las clases a la vez.
+
+  </div>
+</Tradeoffs>
+
+### Evaluar con un split cronológico, cortado por herramienta
+
+CICIDS2017 son cinco días de tráfico real, y los flujos de una misma ráfaga de ataque son casi duplicados. Un split aleatorio pone esos casi duplicados a la vez en entrenamiento y en test. La distribución no tiene columna de fecha, así que el tiempo solo existe como el orden de las filas dentro de cada fichero de captura. El split corta 70/15/15 por posición dentro de cada bloque de día de captura y etiqueta original, de modo que cada herramienta se divide según su propia línea temporal y todas las clases aparecen en los tres conjuntos.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Un split aleatorio, que da 0,95. Un corte global por posición, cuyo último decil del viernes no contiene ningún ataque. Dejar fuera un día entero, lo que deja DDoS, Scan y Botnet sin datos de entrenamiento.
+
+  </div>
+  <div slot="cost">
+
+  La cifra principal baja a 0,65, y Botnet saca 0,00 incluso con 12,6 veces más filas de entrenamiento. Llegar aquí costó dos correcciones: la primera versión cortaba por clase de ataque, lo que convertía el test en un holdout de herramientas que el modelo no había visto, y el orden de las filas salía del orden alfabético de los ficheros en lugar de la hora de captura.
+
+  </div>
+</Tradeoffs>
+
+### Dejar que el track de flujos falle sin tirar la API
+
+La readiness probe solo comprueba el track de eventos. Si falta la cascada de flujos, `/ready` sigue respondiendo que está lista e indica `flow_detector: false`, y las rutas de flujos responden 503 por su cuenta.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Fallar la readiness cuando falte cualquier modelo. Kubernetes sacaría entonces el pod de servicio y se llevaría por delante los endpoints de eventos, por un track que es opcional.
+
+  </div>
+  <div slot="cost">
+
+  "Lista" ya no significa "todas las rutas funcionan". Un cliente de las rutas de flujos tiene que gestionar el 503 por su cuenta, y un operador tiene que leer las comprobaciones de readiness, no el código de estado.
+
+  </div>
+</Tradeoffs>
+
+### Denegar todo el tráfico por defecto, también dentro del clúster
+
+Los namespaces `platform` y `ml` empiezan con políticas que deniegan todo el tráfico de entrada y de salida. Después, políticas explícitas abren lo necesario: el ingress controller y Prometheus pueden llegar a la API, la API puede llegar a `ml` y `ml` puede llegar a MLflow.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Confiar en el clúster privado y en el balanceador de carga como único perímetro, que es lo que GKE hace por defecto.
+
+  </div>
+  <div slot="cost">
+
+  Cada conexión nueva necesita su propia política, y cuando falta una se nota como un timeout, no como un error que diga qué política falta.
+
+  </div>
+</Tradeoffs>
+
+## Lo que todavía no hace
+
+- **Los modelos entrenados no llegan a la API dentro del clúster.** Los jobs de entrenamiento escriben en un volumen de `ml`, y los volume claims no pueden cruzar namespaces. Un pod de la API en el clúster arranca con modelos de eventos sin entrenar y responde 503 en las rutas de flujos. La solución es pasar por un almacén de objetos; existe una variable `MODELS_BUCKET` para eso, pero ningún lado la usa todavía.
+- **Cloud Armor está escrito pero apagado.** El módulo de seguridad define una política WAF con reglas OWASP, y el entorno `dev` fija `enable_cloud_armor = false`.
+- **Las cifras corregidas están en una rama.** La nueva medición con el orden de captura real está en `temporal-fix`, que no se ha mergeado, así que el README del repositorio sigue mostrando el 0,28 anterior.
+- **El track de eventos se entrena con datos sintéticos.** Sus resultados demuestran que el pipeline funciona, no que detecte ataques reales.
