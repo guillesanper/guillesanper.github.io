@@ -103,6 +103,13 @@ export const ui = {
 			'Things I have built end to end. Each one has a write-up on the decisions behind it.',
 		'projects.article': 'Article',
 		'projects.demo': 'Demo',
+		'project.back': 'All projects',
+		'project.source': 'Source code',
+		'project.article': 'Related article',
+		'project.considered': 'Considered instead',
+		'project.cost': 'What it costs',
+		'project.onlyInEnglish': 'This project page is only available in English.',
+		'project.details': 'How it works',
 
 		'tags.title': 'All Tags',
 		'tags.description':
@@ -203,6 +210,13 @@ export const ui = {
 			'Cosas que he construido de principio a fin. Cada una tiene un artículo con las decisiones que hay detrás.',
 		'projects.article': 'Artículo',
 		'projects.demo': 'Demo',
+		'project.back': 'Todos los proyectos',
+		'project.source': 'Código fuente',
+		'project.article': 'Artículo relacionado',
+		'project.considered': 'Alternativa descartada',
+		'project.cost': 'Lo que cuesta',
+		'project.onlyInEnglish': 'La página de este proyecto solo está disponible en inglés.',
+		'project.details': 'Cómo funciona',
 
 		'tags.title': 'Todas las etiquetas',
 		'tags.description':

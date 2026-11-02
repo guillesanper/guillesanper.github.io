@@ -12,7 +12,7 @@ export const AUTHOR_ROLE = 'Software Engineer · Platform & ML';
 export const GITHUB_USER = 'guillesanper';
 export const GITHUB_URL = `https://github.com/${GITHUB_USER}`;
 export const LINKEDIN_URL = 'https://www.linkedin.com/in/guillermo-sanchez-perez-a405613a5/'; // optional
-export const CONTACT_EMAIL = 'guilsa06@ucm.es';
+export const CONTACT_EMAIL = 'guillesanper21@gmail.com';
 // One PDF per language, served from public/ and built from cv/ (see cv/render.mjs).
 export const CV_PATHS = {
 	en: '/cv/guillermo-sanchez-cv-en.pdf',

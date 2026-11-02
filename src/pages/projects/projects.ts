@@ -3,6 +3,9 @@ import { defaultLang, type Lang } from "../../i18n/ui";
 
 export interface Project {
   name: string;
+  /** URL segment of the project page, `/projects/<slug>/`. The page exists
+   *  only once src/content/projects/<slug>.mdx does. */
+  slug: string;
   demoLink: string;
   tags?: string[],
   description?: string;
@@ -16,6 +19,7 @@ export interface Project {
 export const projects: Project[] = [
   {
     name: 'Sentinel',
+    slug: 'sentinel',
     description:
       'Intrusion detection platform on GKE with two tracks: log events and CICIDS2017 network flows through an Isolation Forest → XGBoost cascade. Terraform modules for VPC, IAM and the cluster, kustomize overlays, default-deny network policies, and training as Kubernetes Jobs. The flow track is where a chronological split exposed two of my own published numbers as wrong.',
     demoLink: `${GITHUB_URL}/sentinel-platform`,
@@ -30,6 +34,7 @@ export const projects: Project[] = [
   },
   {
     name: 'Password Manager',
+    slug: 'password-manager',
     description:
       'Self-hosted password and file manager where the server cannot read what it stores. The master password becomes keys in the browser (Argon2id + HKDF), the server holds only a verifier and AES-256-GCM blobs bound to their row, and rotating the password rewraps 32 bytes instead of re-encrypting the vault.',
     demoLink: `${GITHUB_URL}/django-password-manager`,
@@ -45,20 +50,22 @@ export const projects: Project[] = [
   },
   {
     name: 'DataMap',
+    slug: 'datamap',
     description:
-      'Data migration platform that introspects PostgreSQL, MySQL, SQL Server and Oracle schemas through their catalogs, maps tables and columns in a graph UI, and generates INSERT INTO ... SELECT scripts. Migration order comes from a topological sort over the foreign-key graph that fails explicitly on cycles.',
+      'Data migration platform that introspects PostgreSQL, MySQL, SQL Server and Oracle schemas through their catalogs, maps tables and columns in a graph UI, and generates INSERT INTO ... SELECT scripts. Credentials are encrypted under a key derived from a passphrase, connectors verify TLS and refuse private hosts by default, and a foreign-key graph reports load order and cycles.',
     demoLink: `${GITHUB_URL}/datamaper-migration-assistant`,
     postLink: '/2026-03-08-encrypted-database-connectors/',
     tags: ['FastAPI', 'TypeScript', 'Docker', 'Redis', 'PostgreSQL'],
     i18n: {
       es: {
         description:
-          'Plataforma de migración de datos que inspecciona esquemas de PostgreSQL, MySQL, SQL Server y Oracle a través de sus catálogos, mapea tablas y columnas en una interfaz de grafo y genera scripts INSERT INTO ... SELECT. El orden de migración sale de un orden topológico sobre el grafo de claves foráneas que falla de forma explícita ante ciclos.'
+          'Plataforma de migración de datos que inspecciona esquemas de PostgreSQL, MySQL, SQL Server y Oracle a través de sus catálogos, mapea tablas y columnas en una interfaz de grafo y genera scripts INSERT INTO ... SELECT. Las credenciales se cifran con una clave derivada de una frase de paso, los conectores verifican TLS y rechazan hosts privados por defecto, y un grafo de claves foráneas indica el orden de carga y los ciclos.'
       }
     }
   },
   {
     name: 'ReactorGuard',
+    slug: 'reactorguard',
     description:
       'Anomaly detection for a simulated pressurised water reactor. An energy-conserving point-kinetics model generates labelled process and instrument faults, and sensor-fault detectors run on a Kafka stream. GKE and Kafka are defined in Terraform and Strimzi. The ML alerting layer is the next phase.',
     demoLink: `${GITHUB_URL}/ReactorGuard`,
@@ -73,6 +80,7 @@ export const projects: Project[] = [
   },
   {
     name: 'FlappyBirdNEAT',
+    slug: 'flappybird-neat',
     description:
       'Neuroevolution lab in Java with no ML libraries: a fixed-topology genetic algorithm and full NEAT, compared across 30 paired seeds with corrected statistics. NEAT solves 26/30 runs against 20/30 for the best GA, and training gives bit-identical results on 1 or 8 threads.',
     demoLink: `${GITHUB_URL}/FlappyBirdNeat`,
@@ -86,15 +94,16 @@ export const projects: Project[] = [
   },
   {
     name: 'Music Similarity with Siamese Networks',
+    slug: 'music-similarity',
     description:
-      'Bachelor\'s thesis in progress, in a team of two. Siamese networks trained with contrastive and triplet losses learn song embeddings from log-mel spectrograms, MERT embeddings and acoustic descriptors, and are compared against classical classifiers, MFCC and MERT. The resulting similarity graphs are evaluated on FMA and MagnaTagATune with Recall@K, MAP and nDCG, using paired bootstrap confidence intervals with Holm correction.',
+      'Bachelor\'s thesis in progress, in a team of two, on whether differences between music representations lead to significantly different similarity graphs. The MFCC and MERT baselines, the kNN graph and the evaluation on FMA are built: Recall@K, MAP and nDCG with an artist-clustered paired bootstrap and Holm correction. Siamese networks with contrastive and triplet losses, and the human judgements of MagnaTagATune, come next.',
     demoLink: `${GITHUB_URL}/music-similarity-ai`,
     tags: ['Python', 'PyTorch'],
     i18n: {
       es: {
         name: 'Similitud musical con redes siamesas',
         description:
-          'TFG en curso, en equipo de dos. Redes siamesas entrenadas con pérdida contrastiva y triplet aprenden embeddings de canciones a partir de espectrogramas log-mel, embeddings de MERT y descriptores acústicos, y se comparan con clasificadores clásicos, MFCC y MERT. Los grafos de similitud resultantes se evalúan en FMA y MagnaTagATune con Recall@K, MAP y nDCG, con intervalos de confianza por bootstrap pareado y corrección de Holm.'
+          'TFG en curso, en equipo de dos, sobre si las diferencias entre representaciones musicales producen grafos de similitud significativamente distintos. Están construidas las líneas base de MFCC y MERT, el grafo kNN y la evaluación sobre FMA: Recall@K, MAP y nDCG con bootstrap pareado agrupado por artista y corrección de Holm. Lo siguiente son las redes siamesas con pérdida contrastiva y triplet, y los juicios humanos de MagnaTagATune.'
       }
     }
   }

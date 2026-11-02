@@ -1,0 +1,165 @@
+---
+updatedDate: '2026-10-31'
+diagramCaption: 'Solid boxes exist and are tested; dashed ones are the next phase. The Kafka layer and its Terraform are written but not deployed yet, so far the stream has only run on a local Docker setup.'
+diagram: |
+  flowchart TB
+    subgraph data["Labelled data"]
+      direction LR
+      tep[("Tennessee Eastman<br/>52 sensor channels")]
+      sim["PWR simulator<br/>point kinetics, 3 thermal nodes"]
+      faults["Fault catalogue<br/>process and instrument"]
+      sim --> faults
+    end
+    subgraph stream["Kafka, Strimzi on GKE"]
+      direction LR
+      raw["sensor-readings-raw"]
+      val["Validation consumer<br/>5 detectors"]
+      alerts["anomaly-alerts"]
+      raw --> val --> alerts
+    end
+    subgraph next["Next phase"]
+      direction LR
+      ml["Regime-aware<br/>anomaly models"]
+      policy["Alert policy<br/>severity by safety margin"]
+      ml --> policy
+    end
+    data -- "readings" --> stream
+    stream -.-> next
+    classDef planned stroke-dasharray: 5 5
+    class ml,policy planned
+---
+
+Anomaly detection for a simulated pressurised water reactor. The goal is a machine learning layer that decides when the reactor's state deserves an alert. That layer isn't built yet. Everything so far has gone into what it needs first: a stream of sensor readings, detectors for broken instruments, and a physics simulation that generates faults with the right answer attached.
+
+The reasoning behind that order is in [Alert generation for a simulated nuclear reactor: ground truth first](/2026-05-12-reactor-anomaly-alerts/).
+
+## How it works
+
+1. **Stream.** A producer publishes sensor readings to Kafka. The first dataset is the Tennessee Eastman Process, a chemical-plant benchmark with 52 channels and labelled fault runs. Each reading gets a deterministic UUID5 built from its source.
+2. **Validate.** A consumer runs five detectors over every reading: stuck value, rate of change, out of range, cross-correlation between channels, and a Kalman residual detector for drift. It sets the reading's `quality` flag and publishes every detected fault to `anomaly-alerts`.
+3. **Prepare features.** A DVC pipeline goes from the raw dataset to features, a Feast offline store and time-ordered train, validation and test splits. Rebuilding it produces identical hashes.
+4. **Simulate.** A simplified 3000 MWt PWR model produces coupled signals, and a fault catalogue injects process faults (the plant changes) and instrument faults (only the reading changes). A scenario planner draws runs against a severity budget, and every sample is labelled with its true state and whether its reading is corrupted.
+
+```mermaid caption="Why the simulator exists: its signals are coupled. Cut the coolant flow and fuel temperature rises; Doppler and moderator feedback pull reactivity down, and power settles at a new point. A detector trained on this can learn that a combination of readings is impossible even when each one is in range."
+flowchart TB
+  rods["PI rod<br/>controller"] --> rho["Reactivity"]
+  rho --> pk["Point kinetics<br/>6 precursor groups"]
+  pk --> fuel["Fuel"]
+  fuel --> core["Core outlet"]
+  core --> sg["Steam generator"]
+  flow["Coolant flow"] --> core
+  fuel -. "Doppler" .-> rho
+  core -. "moderator, void" .-> rho
+```
+
+## Design decisions
+
+### Ground truth before models
+
+A detector can only be evaluated against data where the faults are known, and real reactor fault data is neither public nor plentiful. So the order is stream first, then instrument detectors on a real benchmark, then a simulator that can produce faults on demand. The model layer comes last.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Training on independently perturbed synthetic signals. It is faster to generate, but a detector trained on it learns noise thresholds, not which combinations of readings are physically impossible.
+
+  </div>
+  <div slot="cost">
+
+  Months of work before any machine learning, and a model simple enough to make a nuclear engineer wince. Its neutronic coefficients are placeholders from the literature.
+
+  </div>
+</Tradeoffs>
+
+### The validator never reads the quality flag
+
+`quality` says whether a transmitter can be trusted, which is exactly what the validator is trying to decide. Reading it as an input would make the evaluation circular. The validator writes it and never reads it.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Using the flag as one more input. With real plant data it would be tempting, because transmitters do report their own faults.
+
+  </div>
+  <div slot="cost">
+
+  Every detector has to infer trust from the signal alone, including faults the instrument already knows about.
+
+  </div>
+</Tradeoffs>
+
+### Thresholds as a fraction of each channel's alarm band
+
+A single absolute threshold across 52 channels measured in kg/s, bar and mol% means something different on every one of them. Each threshold is expressed as a fraction of that channel's alarm band.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Thresholds in engineering units, tuned channel by channel.
+
+  </div>
+  <div slot="cost">
+
+  Every channel needs an alarm band. For the simulator they are derived from normal runs, so changing the model means deriving them again.
+
+  </div>
+</Tradeoffs>
+
+### Deterministic alert identifiers
+
+Kafka delivers at least once, so a reading can be processed twice. Every alert's ID is a UUID5 of the fault and its source reading, so a reprocessed reading produces the same ID and can be deduplicated downstream instead of paging someone twice.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Kafka transactions for exactly-once processing between the topics.
+
+  </div>
+  <div slot="cost">
+
+  Deduplication is the consumer's job, and two genuinely different alerts for the same fault on the same reading would collapse into one.
+
+  </div>
+</Tradeoffs>
+
+### A simulator that proves its own physics
+
+Equilibrium is derived from power, flow and inlet temperature, not typed in: after 24 simulated hours at nominal power the largest relative derivative is 6e-17. Energy is conserved by construction, closing to 2e-15 over a 2,000-step ramp. The LSODA solver is checked against Radau, which agrees to 6.5e-8.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Hand-tuned initial conditions and a single solver. That is enough to produce plausible curves, but not to tell a drifting model from a real transient.
+
+  </div>
+  <div slot="cost">
+
+  Every change to the model has to pass these checks again, and the tests that compare against independent references are still pending.
+
+  </div>
+</Tradeoffs>
+
+### Never report an unmeasured criterion as met
+
+Each phase has success criteria, and a verification script reports each one as met, failed or not measured. A skipped test or a figure taken on the local stack never counts as met. That is why two of the streaming phase's four criteria, Kafka throughput and feature latency under load, are still "not measured".
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Accepting local benchmarks as evidence. They are informative, but they don't measure the cluster the criteria are about.
+
+  </div>
+  <div slot="cost">
+
+  The project status stays visibly incomplete until it runs on real infrastructure.
+
+  </div>
+</Tradeoffs>
+
+## What it doesn't do yet
+
+- **Nothing is deployed.** GKE, Kafka and the workloads are defined in Terraform and kustomize, but they have only been verified locally.
+- **There is no ML layer.** The training script and the `/predict` and `/explain` routes are scaffolding. The plan conditions detection on the operating regime, derives severity from proximity to a safety limit and gates notifications on persistence.
+- **Slow drift is invisible at TEP's cadence.** TEP samples every 180 seconds, and at that rate this mechanism can only see drift within a narrow band of about 10 to 18 alarm-band widths per hour.
+- **The labelling target doesn't fit.** The design asks for 40% of samples to be labelled as faults, but with the current density limits it would take 397 runs instead of 32. The rate is waiting for a decision.
+- **One detector is noisy on simulated data.** The Kalman detector uses a fixed observation noise in engineering units and fires on about half of the normal readings on the flow channels. It is recorded as debt.

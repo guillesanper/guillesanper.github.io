@@ -2,6 +2,7 @@
 import type { Project } from '../pages/projects/projects'
 import TechPill from './TechPill.astro';
 import { getLangFromUrl, useTranslations, localizePath } from '@src/i18n/utils';
+import { getProjectPageSlugs } from '@src/i18n/projects';
 
 interface Props {
   projects: Project[];
@@ -15,18 +16,30 @@ const stacked = variant === 'stacked';
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 
+// Projects with a page open it from anywhere on the card; the rest still
+// link straight to their repository.
+const withPage = await getProjectPageSlugs();
+const pageHref = (project: Project) =>
+  withPage.has(project.slug) ? localizePath(`/projects/${project.slug}/`, lang) : undefined;
+
 const cardClass = stacked
   ? 'col-span-12'
   : 'col-span-12 sm:col-span-6 lg:col-span-4';
 ---
 <div class="grid grid-cols-12 gap-5">
   {
-    projects.map((project: Project) =>
-      <article class={`project-card ${cardClass} border border-zinc-200 dark:border-zinc-700 rounded-xl p-5 transition-colors duration-200 hover:border-zinc-400 hover:bg-zinc-50/60 dark:hover:border-zinc-500 dark:hover:bg-zinc-800/40`}>
+    projects.map((project: Project) => {
+      const href = pageHref(project);
+      return (
+      <article class={`project-card ${cardClass} ${href ? 'relative' : ''} border border-zinc-200 dark:border-zinc-700 rounded-xl p-5 transition-colors duration-200 hover:border-zinc-400 hover:bg-zinc-50/60 dark:hover:border-zinc-500 dark:hover:bg-zinc-800/40`}>
         <div class={stacked ? 'md:flex md:items-start md:justify-between md:gap-10' : ''}>
           <div class={stacked ? 'min-w-0 md:flex-1' : ''}>
             <h3 class="font-semibold text-lg">
-              <a class="no-underline decoration-[var(--accent)] decoration-2 underline-offset-4 hover:underline" href={project.demoLink} target="_blank" rel={project.demoLinkRel}>{project.name}</a>
+              {
+                href
+                  ? <a class="project-card__link no-underline decoration-[var(--accent)] decoration-2 underline-offset-4 hover:underline" href={href}>{project.name}</a>
+                  : <a class="no-underline decoration-[var(--accent)] decoration-2 underline-offset-4 hover:underline" href={project.demoLink} target="_blank" rel={project.demoLinkRel}>{project.name}</a>
+              }
             </h3>
 
             <div class={`text-zinc-600 dark:text-zinc-300 mt-2 mb-4 ${stacked ? 'text-pretty max-w-[72ch]' : 'line-clamp-3 min-h-[72px]'}`}>
@@ -46,15 +59,22 @@ const cardClass = stacked
             ? 'flex items-center gap-4 mt-5 md:mt-0 md:flex-col md:items-end md:gap-3 md:shrink-0'
             : 'flex justify-end gap-3 mt-4'}>
             {
+              href &&
+              <span class="arrow-link project-card__cue whitespace-nowrap" aria-hidden="true">
+                {t('project.details')}
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+              </span>
+            }
+            {
               project.postLink &&
-              <a class="arrow-link whitespace-nowrap" href={localizePath(project.postLink, lang)}>
+              <a class="arrow-link relative z-10 whitespace-nowrap" href={localizePath(project.postLink, lang)}>
                 {t('projects.article')}
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
               </a>
             }
             {
               project.demoLink &&
-              <a class="arrow-link whitespace-nowrap" href={project.demoLink} target="_blank" rel={project.demoLinkRel}>
+              <a class="arrow-link relative z-10 whitespace-nowrap" href={project.demoLink} target="_blank" rel={project.demoLinkRel}>
                 {t('projects.demo')}
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-external-link"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
               </a>
@@ -62,6 +82,40 @@ const cardClass = stacked
           </div>
         </div>
       </article>
-    )
+      );
+    })
   }
 </div>
+
+<style>
+  /* Stretched link: the title's link covers the whole card, so the card is one
+     click target without nesting links. The article and repo links sit above
+     it (`relative z-10`) and stay independently clickable. */
+  .project-card__link::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    /* Above the tech pills, which are positioned for their hover glow. */
+    z-index: 1;
+    border-radius: inherit;
+  }
+  .project-card__link:focus-visible {
+    outline: none;
+  }
+  .project-card:has(.project-card__link:focus-visible) {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .project-card:has(.project-card__link) {
+    cursor: pointer;
+  }
+  .project-card:hover .project-card__cue {
+    color: #09090b;
+  }
+  :global(.dark) .project-card:hover .project-card__cue {
+    color: #fafafa;
+  }
+  .project-card:hover .project-card__cue svg {
+    transform: translateX(2px);
+  }
+</style>

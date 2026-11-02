@@ -1,0 +1,165 @@
+---
+updatedDate: '2026-10-31'
+diagramCaption: 'Las cajas continuas existen y tienen tests; las discontinuas son la siguiente fase. La capa de Kafka y su Terraform están escritos pero todavía no desplegados: de momento el stream solo ha corrido en un entorno local con Docker.'
+diagram: |
+  flowchart TB
+    subgraph data["Datos etiquetados"]
+      direction LR
+      tep[("Tennessee Eastman<br/>52 canales de sensores")]
+      sim["Simulador PWR<br/>cinética puntual, 3 nodos térmicos"]
+      faults["Catálogo de fallos<br/>de proceso e instrumento"]
+      sim --> faults
+    end
+    subgraph stream["Kafka, Strimzi sobre GKE"]
+      direction LR
+      raw["sensor-readings-raw"]
+      val["Consumidor de validación<br/>5 detectores"]
+      alerts["anomaly-alerts"]
+      raw --> val --> alerts
+    end
+    subgraph next["Siguiente fase"]
+      direction LR
+      ml["Modelos de anomalías<br/>por régimen de operación"]
+      policy["Política de alertas<br/>severidad según margen"]
+      ml --> policy
+    end
+    data -- "lecturas" --> stream
+    stream -.-> next
+    classDef planned stroke-dasharray: 5 5
+    class ml,policy planned
+---
+
+Detección de anomalías para un reactor de agua a presión simulado. El objetivo es una capa de machine learning que decida cuándo el estado del reactor merece una alerta. Esa capa todavía no existe. Todo el trabajo hasta ahora ha ido a lo que necesita antes: un stream de lecturas de sensores, detectores de instrumentos averiados y una simulación física que genera fallos con la respuesta correcta adjunta.
+
+El razonamiento detrás de ese orden está en [Generación de alertas para un reactor nuclear simulado: primero, la verdad de referencia](/es/2026-05-12-reactor-anomaly-alerts/).
+
+## Cómo funciona
+
+1. **Stream.** Un productor publica lecturas de sensores en Kafka. El primer dataset es el Tennessee Eastman Process, un benchmark de planta química con 52 canales y ejecuciones de fallo etiquetadas. Cada lectura recibe un UUID5 determinista construido a partir de su origen.
+2. **Validar.** Un consumidor pasa cinco detectores por cada lectura: valor bloqueado, velocidad de cambio, fuera de rango, correlación cruzada entre canales y un detector de residuos de Kalman para la deriva. Fija el indicador `quality` de la lectura y publica cada fallo detectado en `anomaly-alerts`.
+3. **Preparar las features.** Un pipeline de DVC va del dataset en bruto a las features, un almacén offline de Feast y splits de entrenamiento, validación y test ordenados en el tiempo. Reconstruirlo produce hashes idénticos.
+4. **Simular.** Un modelo simplificado de un PWR de 3000 MWt produce señales acopladas, y un catálogo de fallos inyecta fallos de proceso (cambia la planta) y de instrumento (solo cambia la lectura). Un planificador de escenarios genera ejecuciones según un presupuesto de severidad, y cada muestra sale etiquetada con su estado real y con si su lectura está corrompida.
+
+```mermaid caption="Por qué existe el simulador: sus señales están acopladas. Si se corta el caudal de refrigerante, sube la temperatura del combustible; la realimentación Doppler y del moderador reduce la reactividad, y la potencia se estabiliza en un punto nuevo. Un detector entrenado con esto puede aprender que una combinación de lecturas es imposible aunque cada una esté dentro de rango."
+flowchart TB
+  rods["Controlador PI<br/>de barras"] --> rho["Reactividad"]
+  rho --> pk["Cinética puntual<br/>6 grupos de precursores"]
+  pk --> fuel["Combustible"]
+  fuel --> core["Salida del núcleo"]
+  core --> sg["Generador de vapor"]
+  flow["Caudal de refrigerante"] --> core
+  fuel -. "Doppler" .-> rho
+  core -. "moderador, huecos" .-> rho
+```
+
+## Decisiones de diseño
+
+### Primero la verdad de referencia, después los modelos
+
+Un detector solo se puede evaluar con datos en los que se sabe cuáles son los fallos, y los datos reales de fallos de reactores ni son públicos ni abundan. Por eso el orden es: primero el stream, después detectores de instrumentos sobre un benchmark real y después un simulador capaz de producir fallos bajo demanda. La capa de modelos va al final.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Entrenar con señales sintéticas perturbadas de forma independiente. Se generan más rápido, pero un detector entrenado con ellas aprende umbrales de ruido, no qué combinaciones de lecturas son físicamente imposibles.
+
+  </div>
+  <div slot="cost">
+
+  Meses de trabajo antes de tocar el machine learning, y un modelo tan simple que haría torcer el gesto a un ingeniero nuclear. Sus coeficientes neutrónicos son valores provisionales sacados de la literatura.
+
+  </div>
+</Tradeoffs>
+
+### El validador nunca lee el indicador de calidad
+
+`quality` dice si un transmisor es de fiar, que es justo lo que el validador intenta decidir. Leerlo como entrada haría la evaluación circular. El validador lo escribe y nunca lo lee.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Usar el indicador como una entrada más. Con datos de una planta real sería tentador, porque los transmisores sí informan de sus propios fallos.
+
+  </div>
+  <div slot="cost">
+
+  Cada detector tiene que deducir la fiabilidad solo a partir de la señal, incluso para fallos que el instrumento ya conoce.
+
+  </div>
+</Tradeoffs>
+
+### Umbrales como fracción de la banda de alarma de cada canal
+
+Un único umbral absoluto para 52 canales medidos en kg/s, bar y % molar significa algo distinto en cada uno. Cada umbral se expresa como una fracción de la banda de alarma de su canal.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Umbrales en unidades de ingeniería, ajustados canal a canal.
+
+  </div>
+  <div slot="cost">
+
+  Cada canal necesita una banda de alarma. En el simulador se derivan de ejecuciones normales, así que cambiar el modelo obliga a derivarlas de nuevo.
+
+  </div>
+</Tradeoffs>
+
+### Identificadores de alerta deterministas
+
+Kafka entrega al menos una vez, así que una lectura se puede procesar dos veces. El ID de cada alerta es un UUID5 del fallo y de su lectura de origen, de modo que una lectura reprocesada produce el mismo ID y se puede deduplicar más adelante en lugar de avisar a alguien dos veces.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Transacciones de Kafka para procesar exactamente una vez entre topics.
+
+  </div>
+  <div slot="cost">
+
+  La deduplicación es responsabilidad del consumidor, y dos alertas realmente distintas para el mismo fallo en la misma lectura se fundirían en una.
+
+  </div>
+</Tradeoffs>
+
+### Un simulador que demuestra su propia física
+
+El equilibrio se deriva de la potencia, el caudal y la temperatura de entrada, no se escribe a mano: tras 24 horas simuladas a potencia nominal, la mayor derivada relativa es 6e-17. La energía se conserva por construcción y cierra a 2e-15 en una rampa de 2.000 pasos. El integrador LSODA se contrasta con Radau, que coincide con él hasta 6,5e-8.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Condiciones iniciales ajustadas a mano y un solo integrador. Basta para producir curvas creíbles, pero no para distinguir un modelo que deriva de un transitorio real.
+
+  </div>
+  <div slot="cost">
+
+  Cada cambio en el modelo tiene que volver a pasar estas comprobaciones, y los tests que lo comparan con referencias independientes siguen pendientes.
+
+  </div>
+</Tradeoffs>
+
+### No dar nunca por cumplido un criterio que no se ha medido
+
+Cada fase tiene criterios de éxito, y un script de verificación informa de cada uno como cumplido, fallado o no medido. Un test omitido o una cifra tomada en el entorno local nunca cuentan como cumplidos. Por eso dos de los cuatro criterios de la fase de streaming, el rendimiento de Kafka y la latencia de las features bajo carga, siguen "no medidos".
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Aceptar los benchmarks locales como prueba. Son informativos, pero no miden el clúster del que hablan los criterios.
+
+  </div>
+  <div slot="cost">
+
+  El estado del proyecto sigue viéndose incompleto hasta que corra en infraestructura real.
+
+  </div>
+</Tradeoffs>
+
+## Lo que todavía no hace
+
+- **No hay nada desplegado.** GKE, Kafka y las cargas de trabajo están definidos en Terraform y kustomize, pero solo se han verificado en local.
+- **No hay capa de ML.** El script de entrenamiento y las rutas `/predict` y `/explain` son andamiaje. El plan es condicionar la detección al régimen de operación, derivar la severidad de la cercanía a un límite de seguridad y no notificar hasta que la anomalía persista.
+- **La deriva lenta es invisible al ritmo de TEP.** TEP muestrea cada 180 segundos, y a ese ritmo este mecanismo solo ve la deriva dentro de una banda estrecha, de unas 10 a 18 anchuras de banda de alarma por hora.
+- **El objetivo de etiquetado no cabe.** El diseño pide que el 40 % de las muestras estén etiquetadas como fallo, pero con los límites de densidad actuales harían falta 397 ejecuciones en lugar de 32. La tasa está pendiente de una decisión.
+- **Un detector es ruidoso con datos simulados.** El detector de Kalman usa un ruido de observación fijo en unidades de ingeniería y salta en cerca de la mitad de las lecturas normales de los canales de caudal. Está anotado como deuda.

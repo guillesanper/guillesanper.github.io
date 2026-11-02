@@ -1,0 +1,153 @@
+---
+updatedDate: '2026-10-31'
+diagramCaption: 'The game and the training core only know two interfaces: Brain, which turns four inputs into a jump decision, and EvolvingPopulation, which breeds the next generation. Switching between the GA and NEAT is a dropdown, not a code change, and nothing below the entry points knows JavaFX exists.'
+diagram: |
+  flowchart TB
+    subgraph entry["Two ways in"]
+      ui["JavaFX UI<br/>charts, visualizer"]
+      cli["Headless CLI<br/>CSV per generation"]
+    end
+    engine["TrainingEngine<br/>owns the seed, no JavaFX"]
+    subgraph evo["EvolvingPopulation"]
+      ga["Fixed-topology GA<br/>16 swappable operators"]
+      neat["NEAT<br/>species, innovations"]
+    end
+    game["FlappyBirdGame<br/>one copy per agent"]
+    subgraph brain["Brain: feedForward(double[])"]
+      mlp["MLP 4-8-1"]
+      genome["NEAT genome"]
+    end
+    champ[("Champion JSON<br/>versioned, with provenance")]
+    ui --> engine
+    cli --> engine
+    engine --> evo
+    engine --> game
+    evo --> brain
+    game --> brain
+    brain -.-> champ
+---
+
+A neuroevolution lab in Java with no ML libraries. Fifty birds, each controlled by its own neural network, learn to play Flappy Bird through selection alone, with no training data. The networks, both evolution engines and every genetic operator are written by hand.
+
+There are two engines. A classic genetic algorithm evolves the weights of a fixed network, and a full implementation of [NEAT](https://nn.cs.utexas.edu/downloads/papers/stanley.ec02.pdf) evolves the structure as well. The question the project answers is whether evolving the structure pays off, measured carefully enough that the answer can be trusted.
+
+## How it works
+
+Every frame, each bird's brain gets four normalised inputs: its height, its vertical speed, the distance to the next pipe and the height of that pipe's gap. An output above 0.5 means jump. Fitness is the number of frames the bird survives, and a bird that reaches the 20,000-frame cap has solved the game.
+
+1. **Play.** Birds never interact, so each one plays its own copy of the game over the same pipe sequence, in parallel across all cores.
+2. **Evolve with the GA.** Every brain is a 4 → 8 → 1 perceptron, and only its weights change. Fitness is scaled, parents are selected, weights are crossed over and mutated, with each step chosen from 16 operators at runtime.
+3. **Or evolve with NEAT.** Every brain starts as inputs wired straight to the output and grows hidden nodes and connections through mutation. A shared innovation tracker gives the same structural change the same number in every genome. Those numbers line up genes for crossover and measure the distance used to split the population into species, which protects new structures while their weights catch up.
+4. **Keep the best.** A trained agent is saved as versioned JSON with the seed, generation and commit that produced it, and can be replayed from the command line or the UI. The installers open on a bundled NEAT champion already playing.
+
+```mermaid caption="One generation. Everything random comes from one global seed: the pipes of generation g from a seed derived from it, evolution from its own generator. Playing is parallel; everything that decides who breeds runs afterwards, in agent order."
+flowchart TB
+  seed["Global seed"] --> pipes["Pipe seed for generation g<br/>mixed from seed and g"]
+  seed --> rng["Evolution generator"]
+  pipes --> play
+  subgraph play["Play: ForkJoinPool, one task per agent"]
+    direction LR
+    a1["Agent 1<br/>own brain, own game"]
+    a2["Agent 2<br/>own brain, own game"]
+    an["Agent 50<br/>own brain, own game"]
+  end
+  play --> fit["Fitness, frames survived<br/>read in agent order"]
+  fit --> breed["Select, cross over, mutate<br/>sequential"]
+  rng --> breed
+  breed -- "next generation" --> play
+```
+
+## Design decisions
+
+### The game only knows a Brain
+
+`FlappyBirdGame` and the agents only depend on `Brain`, a single method that turns an array of inputs into an output. The training core only depends on `EvolvingPopulation`. The fixed network and the NEAT genome are two implementations of the first, and the GA and NEAT are two implementations of the second.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Two separate applications, one per engine. That is simpler at first, but the comparison would always carry the doubt that the games or the loops differ.
+
+  </div>
+  <div slot="cost">
+
+  The interfaces have to fit both engines, so anything specific to one of them is optional wherever it is reported. In the CSV, NEAT's species and node counts stay empty for the GA.
+
+  </div>
+</Tradeoffs>
+
+### One seed decides everything
+
+`TrainingEngine` owns a global seed, and nothing else in the code creates its own random generator. Populations and networks receive the generator, and operators get it as a call argument instead of storing it. The pipes come from a seed derived from the global seed and the generation number, so every agent plays the same course, and the GA and NEAT face the same pipes for the same seed. Replays use derived generators too, so watching one never disturbs training.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  A `Random` per component. It is the usual way to write it, and it makes a run impossible to reproduce once anything is evaluated in parallel.
+
+  </div>
+  <div slot="cost">
+
+  Every new piece of code that needs randomness has to get its generator from outside, and adding a random draw anywhere changes every result after it.
+
+  </div>
+</Tradeoffs>
+
+### Parallel, and still bit-for-bit deterministic
+
+A generation's agents run on a `ForkJoinPool` with platform threads, because the work is CPU-bound. Each agent, its brain and its game belong to exactly one task. Statistics, selection and reproduction then run sequentially, in agent order. Tests check that 1, 2, 4 and 8 threads give identical results for both engines.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  One shared game that every bird steps through together. The on-screen view still works that way, and a test checks that it produces the same generation as the parallel batch.
+
+  </div>
+  <div slot="cost">
+
+  The sequential part limits the speed-up. With 500 agents the GA only reaches 1.7× on 4 cores, because a fixed network is cheap to evaluate and breeding dominates each generation.
+
+  </div>
+</Tradeoffs>
+
+### A training core with no JavaFX
+
+`Main` chooses between the command line and the UI before any JavaFX class is loaded. The CLI drives `TrainingEngine` directly and writes one CSV row per generation. A test runs the CLI in an isolated class loader and fails if any `javafx.*` class is requested.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Driving training through the UI's controller, so there is a single entry point.
+
+  </div>
+  <div slot="cost">
+
+  An extra layer: `SimulationController` exists only to adapt the engine to the UI's properties, charts and history.
+
+  </div>
+</Tradeoffs>
+
+### A paired study instead of a good run
+
+NEAT and four GA configurations ran on the same 30 seeds for 200 generations each. Success rates come with Wilson intervals and are compared with McNemar's test on the paired outcomes. Generations to solve are compared with Mann-Whitney, with Cliff's δ as the effect size and Holm's correction across comparisons.
+
+<Tradeoffs>
+  <div slot="considered">
+
+  Comparing the best run of each engine, which is what most write-ups show.
+
+  </div>
+  <div slot="cost">
+
+  Thirty runs per configuration, and results less clear-cut than a single chart. NEAT solves 26 of 30 seeds against 20 for the best GA, and solves them sooner, but in success rate the difference with the tournament GA is not significant (adjusted p 0.109).
+
+  </div>
+</Tradeoffs>
+
+The study also found bugs. NEAT's species collapsed into one and stopped protecting new structures. A dynamic compatibility threshold and culling of stagnant species took NEAT from 19 to 26 solved seeds. Two GA selection operators never chose the worst agents as parents, and a review before the 2.0.0 release fixed four more.
+
+## What it doesn't do yet
+
+- **GA champions overfit to their training pipes.** Fitness is measured on a single pipe sequence per generation. On 100 unseen sequences, the two NEAT champions survived 94 and 100, and the five GA champions between 0 and 100. Seven champions are an anecdote, and evaluating on several sequences during training is the next step.
+- **The installers aren't signed.** The first launch shows a SmartScreen or Gatekeeper warning.
+- **The UI is in Spanish.** The README and the command line are in English.
