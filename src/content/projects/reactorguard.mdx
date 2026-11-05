@@ -1,30 +1,30 @@
 ---
-updatedDate: '2026-10-31'
-diagramCaption: 'Solid boxes exist and are tested; dashed ones are the next phase. The Kafka layer and its Terraform are written but not deployed yet, so far the stream has only run on a local Docker setup.'
+updatedDate: '2026-11-05'
+diagramCaption: 'Two kinds of data, two routes. Tennessee Eastman readings go through the stream, where five detectors flag broken instruments, and the same dataset feeds an offline feature pipeline. The PWR simulator writes labelled runs to disk, not to Kafka. Solid boxes exist and are tested; dashed ones are the next phase. The Kafka layer and its Terraform are written but not deployed: so far the stream has only run on a local Docker setup.'
 diagram: |
   flowchart TB
-    subgraph data["Labelled data"]
-      direction LR
-      tep[("Tennessee Eastman<br/>52 sensor channels")]
-      sim["PWR simulator<br/>point kinetics, 3 thermal nodes"]
-      faults["Fault catalogue<br/>process and instrument"]
-      sim --> faults
-    end
-    subgraph stream["Kafka, Strimzi on GKE"]
-      direction LR
+    tep[("Tennessee Eastman<br/>52 sensor channels")]
+    sim["PWR simulator<br/>and fault catalogue"]
+    subgraph stream["Kafka on GKE"]
+      direction TB
       raw["sensor-readings-raw"]
-      val["Validation consumer<br/>5 detectors"]
+      val["Validator<br/>5 detectors"]
       alerts["anomaly-alerts"]
       raw --> val --> alerts
     end
+    feat["DVC pipeline<br/>features, Feast,<br/>ordered splits"]
+    runs[("Labelled runs<br/>Parquet")]
     subgraph next["Next phase"]
       direction LR
       ml["Regime-aware<br/>anomaly models"]
       policy["Alert policy<br/>severity by safety margin"]
       ml --> policy
     end
-    data -- "readings" --> stream
-    stream -.-> next
+    tep -- "streamer" --> stream
+    tep --> feat
+    sim --> runs
+    feat -.-> next
+    runs -.-> next
     classDef planned stroke-dasharray: 5 5
     class ml,policy planned
 ---

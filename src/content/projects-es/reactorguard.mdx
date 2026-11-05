@@ -1,30 +1,30 @@
 ---
-updatedDate: '2026-10-31'
-diagramCaption: 'Las cajas continuas existen y tienen tests; las discontinuas son la siguiente fase. La capa de Kafka y su Terraform están escritos pero todavía no desplegados: de momento el stream solo ha corrido en un entorno local con Docker.'
+updatedDate: '2026-11-05'
+diagramCaption: 'Dos tipos de datos, dos caminos. Las lecturas de Tennessee Eastman pasan por el stream, donde cinco detectores marcan los instrumentos averiados, y el mismo dataset alimenta un pipeline de features offline. El simulador PWR escribe ejecuciones etiquetadas en disco, no en Kafka. Las cajas continuas existen y tienen tests; las discontinuas son la siguiente fase. La capa de Kafka y su Terraform están escritos pero todavía no desplegados: de momento el stream solo ha corrido en un entorno local con Docker.'
 diagram: |
   flowchart TB
-    subgraph data["Datos etiquetados"]
-      direction LR
-      tep[("Tennessee Eastman<br/>52 canales de sensores")]
-      sim["Simulador PWR<br/>cinética puntual, 3 nodos térmicos"]
-      faults["Catálogo de fallos<br/>de proceso e instrumento"]
-      sim --> faults
-    end
-    subgraph stream["Kafka, Strimzi sobre GKE"]
-      direction LR
+    tep[("Tennessee Eastman<br/>52 canales de sensores")]
+    sim["Simulador PWR<br/>y catálogo de fallos"]
+    subgraph stream["Kafka sobre GKE"]
+      direction TB
       raw["sensor-readings-raw"]
-      val["Consumidor de validación<br/>5 detectores"]
+      val["Validador<br/>5 detectores"]
       alerts["anomaly-alerts"]
       raw --> val --> alerts
     end
+    feat["Pipeline DVC<br/>features, Feast,<br/>splits ordenados"]
+    runs[("Ejecuciones<br/>etiquetadas, Parquet")]
     subgraph next["Siguiente fase"]
       direction LR
       ml["Modelos de anomalías<br/>por régimen de operación"]
       policy["Política de alertas<br/>severidad según margen"]
       ml --> policy
     end
-    data -- "lecturas" --> stream
-    stream -.-> next
+    tep -- "streamer" --> stream
+    tep --> feat
+    sim --> runs
+    feat -.-> next
+    runs -.-> next
     classDef planned stroke-dasharray: 5 5
     class ml,policy planned
 ---
