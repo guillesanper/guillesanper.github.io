@@ -56,6 +56,23 @@ flowchart TD
 
 La infraestructura son seis módulos de Terraform: VPC, GKE, IAM, almacenamiento, seguridad y Kubernetes. Los nodos no tienen IP pública, los pods se autentican en GCP con Workload Identity en lugar de claves de cuenta de servicio, y los secretos llegan desde Secret Manager a través de External Secrets Operator. Los overlays de `dev` y `prod` se apoyan en una base común de kustomize.
 
+```mermaid caption="Lo que hay debajo del clúster. Todo lo que queda fuera de la caja de kustomize sale de los módulos de Terraform, External Secrets Operator incluido; kustomize aplica lo que corre dentro. Ninguna credencial existe como fichero de clave: los pods obtienen su identidad en GCP con Workload Identity, y los secretos se sincronizan desde Secret Manager a Secrets de Kubernetes."
+flowchart TB
+  kz["kustomize<br/>base, overlays dev y prod:<br/>namespaces, RBAC, policies,<br/>API, HPA, PDB, CronJobs"]
+  sm["Secret Manager"]
+  eso["External Secrets Operator<br/>instalado con Helm"]
+  subgraph vpc["VPC: entrada denegada, Cloud NAT de salida"]
+    gke["GKE<br/>nodos privados, Dataplane V2,<br/>shielded nodes"]
+  end
+  iam["IAM<br/>una cuenta de servicio<br/>por carga"]
+  gcs[("Buckets<br/>modelos, datos, logs")]
+  sm --> eso
+  eso -- "Secrets de Kubernetes" --> gke
+  kz -- "kubectl apply -k" --> gke
+  gke -- "Workload Identity,<br/>sin ficheros de clave" --> iam
+  iam -- "roles por bucket" --> gcs
+```
+
 ## Decisiones de diseño
 
 ### Dos tracks que nunca comparten taxonomía
