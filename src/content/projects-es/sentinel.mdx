@@ -1,28 +1,36 @@
 ---
-updatedDate: '2026-10-31'
-diagramCaption: 'Los namespaces platform y ml parten de denegarlo todo, así que cada conexión que entra o sale de ellos la abre su propia network policy. La línea discontinua del volumen de modelos a la API es un paso que todavía no existe: el entrenamiento corre en el clúster, pero su resultado no llega a los pods que sirven.'
+updatedDate: '2026-11-05'
+diagramCaption: 'Los namespaces platform y ml parten de denegarlo todo, tanto lo que entra como lo que sale. ingress-nginx y Prometheus llegan a la API por el puerto 8000 solo porque una network policy les abre ese puerto a cada uno, y los secretos llegan desde Secret Manager a través de External Secrets en vez de vivir en la imagen. La línea discontinua es un paso que todavía no existe: el entrenamiento corre en el clúster, pero los modelos que escribe no llegan a los pods que sirven.'
 diagram: |
   flowchart TB
-    client["Cliente con un JWT"] --> ingress["ingress-nginx"]
-    subgraph platform["namespace: platform"]
-      api["sentinel-api<br/>FastAPI"]
-      events["Track de eventos<br/>Isolation Forest, XGBoost, reglas"]
-      flows["Track de flujos<br/>Isolation Forest y luego XGBoost"]
+    client["Cliente<br/>con un JWT"]
+    ingress["ingress-nginx"]
+    gsm["GCP Secret<br/>Manager"]
+    subgraph platform["platform: deny-all y luego allow"]
+      direction TB
+      api["sentinel-api<br/>FastAPI, de 2 a 10 pods"]
+      events["Track de eventos<br/>Isolation Forest,<br/>XGBoost, reglas"]
+      flows["Track de flujos<br/>Isolation Forest<br/>y luego XGBoost"]
       api --> events
       api --> flows
     end
-    subgraph ml["namespace: ml"]
-      jobs["CronJobs de<br/>entrenamiento"]
+    subgraph ml["ml: deny-all y luego allow"]
+      direction TB
+      jobs["CronJobs de<br/>entrenamiento,<br/>misma imagen"]
       models[("sentinel-models<br/>volumen")]
       jobs --> models
     end
-    subgraph obs["namespace: observability"]
-      prom["Prometheus, Grafana,<br/>Alertmanager"]
+    subgraph obs["observability"]
+      prom["Prometheus lee<br/>/metrics en el 8000,<br/>Grafana, Alertmanager"]
     end
-    ingress --> api
-    secrets["GCP Secret Manager"] -- "External Secrets" --> api
-    prom -. "lee /metrics" .-> api
-    models -. "aún sin paso de transferencia" .-> api
+    client --> ingress
+    flows ~~~ prom
+    events ~~~ prom
+    prom ~~~ jobs
+    ingress -- "TCP 8000" --> api
+    gsm -- "External Secrets" --> api
+    api --> prom
+    api -.-> models
 ---
 
 Una plataforma de detección de intrusiones que analiza dos tipos de datos en paralelo: eventos de log de la infraestructura y flujos de red. Cada uno tiene su propio modelo y sus propios endpoints. Todo corre en un clúster privado de GKE, definido con Terraform y desplegado con kustomize.

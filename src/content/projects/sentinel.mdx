@@ -1,28 +1,36 @@
 ---
-updatedDate: '2026-10-31'
-diagramCaption: 'The platform and ml namespaces start from deny-all, so every connection into and out of them is opened by its own network policy. The dashed line from the model volume to the API is a step that does not exist yet: training runs in the cluster, but its output does not reach the pods that serve.'
+updatedDate: '2026-11-05'
+diagramCaption: 'The platform and ml namespaces start from deny-all, for traffic in and out. ingress-nginx and Prometheus reach the API on port 8000 only because a network policy opens that port for each of them, and secrets arrive from Secret Manager through External Secrets instead of living in the image. The dashed line is a step that does not exist yet: training runs in the cluster, but the models it writes do not reach the pods that serve.'
 diagram: |
   flowchart TB
-    client["Client with a JWT"] --> ingress["ingress-nginx"]
-    subgraph platform["namespace: platform"]
-      api["sentinel-api<br/>FastAPI"]
-      events["Events track<br/>Isolation Forest, XGBoost, rules"]
-      flows["Flows track<br/>Isolation Forest, then XGBoost"]
+    client["Client<br/>with a JWT"]
+    ingress["ingress-nginx"]
+    gsm["GCP Secret<br/>Manager"]
+    subgraph platform["platform: deny-all, then allow"]
+      direction TB
+      api["sentinel-api<br/>FastAPI, 2 to 10 pods"]
+      events["Events track<br/>Isolation Forest,<br/>XGBoost, rules"]
+      flows["Flows track<br/>Isolation Forest,<br/>then XGBoost"]
       api --> events
       api --> flows
     end
-    subgraph ml["namespace: ml"]
-      jobs["CronJobs<br/>event and flow training"]
+    subgraph ml["ml: deny-all, then allow"]
+      direction TB
+      jobs["Training CronJobs<br/>same image as API"]
       models[("sentinel-models<br/>volume")]
       jobs --> models
     end
-    subgraph obs["namespace: observability"]
-      prom["Prometheus, Grafana,<br/>Alertmanager"]
+    subgraph obs["observability"]
+      prom["Prometheus scrapes<br/>/metrics on 8000,<br/>Grafana, Alertmanager"]
     end
-    ingress --> api
-    secrets["GCP Secret Manager"] -- "External Secrets" --> api
-    prom -. "scrapes /metrics" .-> api
-    models -. "no transfer step yet" .-> api
+    client --> ingress
+    flows ~~~ prom
+    events ~~~ prom
+    prom ~~~ jobs
+    ingress -- "TCP 8000" --> api
+    gsm -- "External Secrets" --> api
+    api --> prom
+    api -.-> models
 ---
 
 An intrusion detection platform that looks at two kinds of data in parallel: log events from infrastructure, and network flows. Each has its own model and its own endpoints. Everything runs on a private GKE cluster that is defined in Terraform and deployed with kustomize.
