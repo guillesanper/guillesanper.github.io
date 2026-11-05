@@ -1,30 +1,35 @@
 ---
-updatedDate: '2026-10-31'
-diagramCaption: 'El juego y el núcleo de entrenamiento solo conocen dos interfaces: Brain, que convierte cuatro entradas en una decisión de saltar, y EvolvingPopulation, que cría la siguiente generación. Cambiar entre el GA y NEAT es un desplegable, no un cambio de código, y nada por debajo de los puntos de entrada sabe que JavaFX existe.'
+updatedDate: '2026-11-05'
+diagramCaption: 'El juego y el núcleo de entrenamiento solo conocen dos interfaces: Brain, que convierte cuatro entradas en una decisión de saltar, y EvolvingPopulation, que cría la siguiente generación. Cada una tiene dos implementaciones, y cambiar entre ellas es un desplegable, no un cambio de código. Nada por debajo de los puntos de entrada sabe que JavaFX existe.'
 diagram: |
   flowchart TB
     subgraph entry["Dos puntos de entrada"]
+      direction LR
       ui["Interfaz JavaFX<br/>gráficas, visualizador"]
       cli["CLI sin interfaz<br/>CSV por generación"]
+      ui ~~~ cli
     end
     engine["TrainingEngine<br/>dueño de la semilla, sin JavaFX"]
-    subgraph evo["EvolvingPopulation"]
+    subgraph evo["interfaz EvolvingPopulation"]
+      direction LR
       ga["GA de topología fija<br/>16 operadores intercambiables"]
       neat["NEAT<br/>especies, innovaciones"]
+      ga ~~~ neat
     end
     game["FlappyBirdGame<br/>una copia por agente"]
-    subgraph brain["Brain: feedForward(double[])"]
+    subgraph brain["interfaz Brain: feedForward(double[])"]
+      direction LR
       mlp["MLP 4-8-1"]
       genome["Genoma NEAT"]
+      mlp ~~~ genome
     end
     champ[("Campeón en JSON<br/>versionado, con procedencia")]
-    ui --> engine
-    cli --> engine
+    entry --> engine
     engine --> evo
     engine --> game
-    evo --> brain
-    game --> brain
-    brain -.-> champ
+    evo -- "cría" --> brain
+    game -- "pregunta si saltar" --> brain
+    brain -. "mejor agente, reproducible" .-> champ
 ---
 
 Un laboratorio de neuroevolución en Java sin librerías de ML. Cincuenta pájaros, cada uno controlado por su propia red neuronal, aprenden a jugar a Flappy Bird solo por selección, sin datos de entrenamiento. Las redes, los dos motores de evolución y todos los operadores genéticos están escritos a mano.

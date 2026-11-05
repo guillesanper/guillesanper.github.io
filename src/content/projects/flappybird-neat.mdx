@@ -1,30 +1,35 @@
 ---
-updatedDate: '2026-10-31'
-diagramCaption: 'The game and the training core only know two interfaces: Brain, which turns four inputs into a jump decision, and EvolvingPopulation, which breeds the next generation. Switching between the GA and NEAT is a dropdown, not a code change, and nothing below the entry points knows JavaFX exists.'
+updatedDate: '2026-11-05'
+diagramCaption: 'The game and the training core only know two interfaces: Brain, which turns four inputs into a jump decision, and EvolvingPopulation, which breeds the next generation. Each has two implementations side by side, and switching between them is a dropdown, not a code change. Nothing below the entry points knows JavaFX exists.'
 diagram: |
   flowchart TB
     subgraph entry["Two ways in"]
+      direction LR
       ui["JavaFX UI<br/>charts, visualizer"]
       cli["Headless CLI<br/>CSV per generation"]
+      ui ~~~ cli
     end
     engine["TrainingEngine<br/>owns the seed, no JavaFX"]
-    subgraph evo["EvolvingPopulation"]
+    subgraph evo["interface EvolvingPopulation"]
+      direction LR
       ga["Fixed-topology GA<br/>16 swappable operators"]
       neat["NEAT<br/>species, innovations"]
+      ga ~~~ neat
     end
     game["FlappyBirdGame<br/>one copy per agent"]
-    subgraph brain["Brain: feedForward(double[])"]
+    subgraph brain["interface Brain: feedForward(double[])"]
+      direction LR
       mlp["MLP 4-8-1"]
       genome["NEAT genome"]
+      mlp ~~~ genome
     end
     champ[("Champion JSON<br/>versioned, with provenance")]
-    ui --> engine
-    cli --> engine
+    entry --> engine
     engine --> evo
     engine --> game
-    evo --> brain
-    game --> brain
-    brain -.-> champ
+    evo -- "breeds" --> brain
+    game -- "asks to jump" --> brain
+    brain -. "best agent, replayable" .-> champ
 ---
 
 A neuroevolution lab in Java with no ML libraries. Fifty birds, each controlled by its own neural network, learn to play Flappy Bird through selection alone, with no training data. The networks, both evolution engines and every genetic operator are written by hand.
