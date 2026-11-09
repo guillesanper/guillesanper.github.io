@@ -5,7 +5,6 @@ import tailwind from "@astrojs/tailwind";
 import { autoNewTabExternalLinks } from './src/autoNewTabExternalLinks';
 import { remarkMermaid } from './src/remarkMermaid';
 
-import partytown from "@astrojs/partytown";
 
 // The single source of truth for the public origin. `canonical`, the `hreflang`
 // alternates, the sitemap, robots.txt, the RSS feed and every `og:`/`twitter:`
@@ -31,8 +30,7 @@ export default defineConfig({
         locales: { en: 'en', es: 'es' }
       }
     }),
-    tailwind(),
-    partytown()
+    tailwind()
   ],
   markdown: {
     extendDefaultPlugins: true,

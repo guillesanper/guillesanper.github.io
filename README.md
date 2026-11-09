@@ -15,7 +15,7 @@ shipped JavaScript is only what the pages actually need.
 | Styling | Tailwind CSS + `@tailwindcss/typography` |
 | Content | Markdown / MDX content collections |
 | SEO | `@astrojs/sitemap`, generated `robots.txt`, RSS feed, canonical + `hreflang` tags |
-| Analytics | Google Analytics via `@astrojs/partytown` (off unless configured) |
+| Analytics | GoatCounter, cookieless (off unless configured); Google Search Console for search data |
 | Package manager | pnpm |
 
 ## Local development
@@ -89,9 +89,10 @@ time, so the names must match exactly — there is no `PUBLIC_` prefix.
 
 | Variable | Enables |
 | :--- | :--- |
-| `GTAG_MEASUREMENT_ID` | Google Analytics |
+| `GOATCOUNTER_CODE` | GoatCounter page views. The site code, e.g. `guillesanper` |
+| `GOOGLE_SITE_VERIFICATION` | The Google Search Console verification meta tag. Only its `content` value |
 
-In CI it is supplied as a GitHub Actions secret; see the `env:` block in
+In CI they are supplied as GitHub Actions repository variables; see the `env:` block in
 [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml).
 
 ## Deployment
