@@ -46,7 +46,13 @@ Technology pills are the one exception: each uses its brand color (`TechPill.ast
   keeps them at 60% or more of their size. Anything wider, and every sequence diagram, keeps
   its size and scrolls sideways, starting from the middle. Mermaid only applies a subgraph's
   `direction` to nodes connected inside it, so siblings that should sit in a row are chained
-  with invisible links (`a ~~~ b ~~~ c`); that row then also stacks on a phone.
+  with invisible links (`a ~~~ b ~~~ c`); that row then also stacks on a phone. The same
+  happens when a node inside the subgraph links to something outside it: point the edge at
+  the subgraph instead if the row matters. Lines carry meaning: a solid arrow is a call or a
+  dependency, a thick one (`==>`) is data that actually moves, and a dashed one is a step
+  that does not exist yet, like a dashed box. To fit a phone without scrolling, a flowchart
+  has to render at about 540px wide or less; break long labels with `<br/>` before Mermaid
+  wraps them on its own.
 - **Tradeoffs** (`Tradeoffs.astro`): under each design decision, two columns, "Considered
   instead" and "What it costs", separated from the text by a hairline.
 - **Arrow link** (`.arrow-link`): secondary navigation; the arrow nudges toward where it goes.

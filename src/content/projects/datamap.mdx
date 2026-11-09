@@ -1,6 +1,6 @@
 ---
-updatedDate: '2026-10-31'
-diagramCaption: 'Two paths reach the customer''s databases. Building the map reads only the system catalogs. Moving data happens only when the user runs a migration, and then inside a single transaction that a dry run rolls back.'
+updatedDate: '2026-11-05'
+diagramCaption: 'Two paths reach the customer''s databases, both over verified TLS and only to public hosts. The thin arrow builds the map: introspection reads only the system catalogs, on both sides. The thick one moves data, and only when the user runs a migration: a read-only SELECT on the source, and every write to the target inside one transaction that a dry run rolls back.'
 diagram: |
   flowchart TB
     spa["React SPA<br/>graph mapping UI"]
@@ -13,18 +13,21 @@ diagram: |
       intro --> deps --> gen --> run
     end
     subgraph own["DataMap's own storage"]
-      direction TB
+      direction LR
       pg[("PostgreSQL<br/>encrypted credentials<br/>and schema cache")]
       redis[("Redis<br/>derived key, 3 h session")]
+      pg ~~~ redis
     end
     subgraph customer["Customer databases"]
-      direction TB
+      direction LR
       src[("Source<br/>PostgreSQL, MySQL,<br/>SQL Server, Oracle")]
       dst[("Target")]
+      src ~~~ dst
     end
     spa -- "HttpOnly cookie, CSRF" --> backend
     backend --> own
-    backend -- "TLS verified,<br/>public hosts only" --> customer
+    backend -- "map: catalogs only" --> customer
+    backend == "migrate: SELECT,<br/>one transaction" ==> customer
 ---
 
 A web tool for planning migrations between relational databases. It reads the schemas of a source and a target, lets you map tables and columns from one to the other in a graph, and generates the SQL that moves the data. It can also run that SQL against the target if you ask it to.

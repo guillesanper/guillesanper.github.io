@@ -1,30 +1,33 @@
 ---
-updatedDate: '2026-10-31'
-diagramCaption: 'Hay dos caminos que llegan a las bases de datos del cliente. Construir el mapa solo lee los catálogos del sistema. Mover datos solo ocurre cuando el usuario lanza una migración, y entonces dentro de una única transacción que un dry run deshace.'
+updatedDate: '2026-11-05'
+diagramCaption: 'Hay dos caminos que llegan a las bases de datos del cliente, los dos con TLS verificado y solo hacia hosts públicos. La flecha fina construye el mapa: la introspección solo lee los catálogos del sistema, en los dos lados. La gruesa mueve datos, y solo cuando el usuario lanza una migración: un SELECT de solo lectura en el origen, y todas las escrituras en el destino dentro de una única transacción que un dry run deshace.'
 diagram: |
   flowchart TB
     spa["SPA en React<br/>mapeo en grafo"]
     subgraph backend["Backend en FastAPI"]
       direction LR
       intro["Introspección<br/>catálogos, sin filas"]
-      deps["Grafo de claves foráneas<br/>orden de dependencias"]
+      deps["Grafo de claves<br/>foráneas, orden<br/>de dependencias"]
       gen["Generador de scripts<br/>INSERT ... SELECT"]
       run["Ejecutor<br/>una transacción"]
       intro --> deps --> gen --> run
     end
     subgraph own["Almacenamiento propio"]
-      direction TB
+      direction LR
       pg[("PostgreSQL<br/>credenciales cifradas<br/>y caché de esquemas")]
-      redis[("Redis<br/>clave derivada, sesión de 3 h")]
+      redis[("Redis<br/>clave derivada,<br/>sesión de 3 h")]
+      pg ~~~ redis
     end
     subgraph customer["BBDD del cliente"]
-      direction TB
+      direction LR
       src[("Origen<br/>PostgreSQL, MySQL,<br/>SQL Server, Oracle")]
       dst[("Destino")]
+      src ~~~ dst
     end
     spa -- "cookie HttpOnly, CSRF" --> backend
     backend --> own
-    backend -- "TLS verificado,<br/>solo hosts públicos" --> customer
+    backend -- "mapa: solo catálogos" --> customer
+    backend == "migrar: SELECT,<br/>una transacción" ==> customer
 ---
 
 Una herramienta web para planificar migraciones entre bases de datos relacionales. Lee los esquemas de un origen y un destino, permite mapear tablas y columnas de uno a otro en un grafo y genera el SQL que mueve los datos. También puede ejecutar ese SQL contra el destino si se lo pides.
