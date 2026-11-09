@@ -17,7 +17,10 @@ interface Props {
 	article?: ArticleMeta;
 }
 
-const { GTAG_MEASUREMENT_ID } = loadEnv(process.env.NODE_ENV || 'production', process.cwd(), '');
+const { GOATCOUNTER_CODE = '' } = loadEnv(process.env.NODE_ENV || 'production', process.cwd(), '');
+// The code becomes part of a URL, so anything that is not a valid GoatCounter
+// code switches counting off instead of ending up in the page.
+const goatcounterCode = /^[a-z0-9-]+$/.test(GOATCOUNTER_CODE.trim()) ? GOATCOUNTER_CODE.trim() : '';
 const { title, description, image, noLangRedirect, noindex, article } = Astro.props;
 
 const lang = getLangFromUrl(Astro.url);
@@ -43,21 +46,17 @@ const lang = getLangFromUrl(Astro.url);
 			<slot />
 		</div>
 		<Footer />
-		<!-- Google tag (gtag.js) -->
-    {
-      GTAG_MEASUREMENT_ID &&
-      <>
-        <script type='text/partytown' async src={'https://www.googletagmanager.com/gtag/js?id=' + GTAG_MEASUREMENT_ID}></script>
-        <script type='text/partytown' define:vars={{ GTAG_MEASUREMENT_ID }}>
-          window.dataLayer = window.dataLayer || [];
-          function gtag() {
-            dataLayer.push(arguments);
-          }
-          gtag('js', new Date());
-
-          gtag('config', GTAG_MEASUREMENT_ID);
-        </script>
-      </>
-    }
+		<!-- GoatCounter: page views without cookies, so no consent banner is needed.
+		     Off unless GOATCOUNTER_CODE is set; the script also ignores localhost. -->
+		{
+			goatcounterCode && (
+				<script
+					is:inline
+					data-goatcounter={`https://${goatcounterCode}.goatcounter.com/count`}
+					async
+					src='https://gc.zgo.at/count.js'
+				/>
+			)
+		}
 	</body>
 </html>

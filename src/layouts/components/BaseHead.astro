@@ -11,6 +11,7 @@ import { getLangFromUrl, localizePath, useTranslations } from '@src/i18n/utils';
 import { allLangs, defaultLang, langLocale, ogLocale } from '@src/i18n/ui';
 import { AUTHOR_NAME, SITE_TITLE } from '@src/consts';
 import type { ArticleMeta } from '@src/seo';
+import { loadEnv } from 'vite';
 
 interface Props {
 	title: string;
@@ -54,6 +55,11 @@ const defaultAlternate = new URL(localizePath(Astro.url.pathname, defaultLang), 
 // The feed is English-only, so it is not localised.
 const feedURL = new URL('/rss.xml', Astro.site).toString();
 const sitemapURL = new URL('/sitemap-index.xml', Astro.site).toString();
+
+// Proves ownership of the site to Google Search Console. Public by design: it
+// is only a token Google looks for in the page. Off unless set.
+const { GOOGLE_SITE_VERIFICATION = '' } = loadEnv(process.env.NODE_ENV || 'production', process.cwd(), '');
+const siteVerification = GOOGLE_SITE_VERIFICATION.trim();
 ---
 
 <!-- Global Metadata -->
@@ -93,6 +99,7 @@ const sitemapURL = new URL('/sitemap-index.xml', Astro.site).toString();
 <!-- Feeds and crawl hints -->
 <link rel='alternate' type='application/rss+xml' title={SITE_TITLE} href={feedURL} />
 <link rel='sitemap' type='application/xml' href={sitemapURL} />
+{siteVerification && <meta name='google-site-verification' content={siteVerification} />}
 
 <!-- Open Graph / Facebook -->
 <meta property='og:type' content={article ? 'article' : 'website'} />
